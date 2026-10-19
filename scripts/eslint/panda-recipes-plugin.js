@@ -71,7 +71,7 @@ function isNonStyleAttribute(attrName) {
 function isPandaStyledJsxOpening(node) {
   const nameNode = node.name;
   if (nameNode.type === 'JSXMemberExpression') {
-    return nameNode.object?.name === 'panda';
+    return true;
   }
   if (nameNode.type === 'JSXIdentifier') {
     return PANDA_JSX_CONTAINERS.has(nameNode.name);
@@ -106,6 +106,37 @@ function inspectCssObjectExpression(context, objExpr) {
     } else if (prop.value?.type === 'ObjectExpression') {
       inspectCssObjectExpression(context, prop.value);
     }
+  }
+}
+
+function isCssCallExpression(node) {
+  if (node.callee?.type === 'Identifier' && node.callee.name === 'css') {
+    return true;
+  }
+  return (
+    node.callee?.type === 'MemberExpression' &&
+    node.callee.object?.name === 'css' &&
+    node.callee.property?.name === 'raw'
+  );
+}
+
+function checkCssCallExpression(context, node) {
+  let totalProps = 0;
+  for (const arg of node.arguments ?? []) {
+    if (arg?.type === 'ObjectExpression') {
+      totalProps += arg.properties.length;
+      inspectCssObjectExpression(context, arg);
+    }
+  }
+  if (totalProps > MAX_INLINE_STYLE_PROPS) {
+    context.report({
+      node,
+      messageId: 'tooManyInlineStyleProps',
+      data: {
+        count: String(totalProps),
+        max: String(MAX_INLINE_STYLE_PROPS),
+      },
+    });
   }
 }
 
@@ -225,6 +256,10 @@ export const pandaRecipesPlugin = {
           },
 
           CallExpression(node) {
+            if (isCssCallExpression(node)) {
+              checkCssCallExpression(context, node);
+              return;
+            }
             const calleeName = node.callee?.name;
             const firstArg = node.arguments?.[0];
             if (

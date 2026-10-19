@@ -55,12 +55,18 @@ Data display             → See references/component-catalog.md § Data Display
 
 **What platform?**
 ```
+md3template (This Repo)  → @m3e/react (<M3eCard>, <M3eButton>) + <m3e-*>/<md-*> custom elements + Panda CSS (src/tokens/md3.ts & src/theme/theme.css)
 Jetpack Compose          → Primary: androidx.compose.material3, MaterialTheme, references/*
 Flutter                  → useMaterial3: true in ThemeData, ColorScheme.fromSeed()
 Web (vanilla JS)         → @material/web (limited; maintenance mode) + CSS custom properties
-Web (React/Vue/Svelte)   → CSS custom properties + wrapper components (no official React lib)
-Web (CSS-only)           → MD3 token values as CSS custom properties (no <md-*> elements)
+Web (React/Vue/Svelte)   → @m3e/react or custom elements typed in src/types/material-web.d.ts
+Web (CSS-only)           → MD3 token values as CSS custom properties
 ```
+
+### Mandatory `md3template` Guardrails (Read First)
+- **Components**: Prefer React wrappers from `@m3e/react/*` (e.g., `import { M3eCard } from '@m3e/react/card'`, `import { M3eButton } from '@m3e/react/button'`) or `<m3e-*>` / `<md-*>` custom elements (typed in `src/types/material-web.d.ts`). Never use raw lowercase HTML tags (`<div>`, `<button>`, `<span>`, `<p>`) or `<panda.div>` / `<panda.button>`.
+- **No Hardcoded Strings in JSX**: Never write `<M3eButton>Action</M3eButton>` or `<md-filled-button>Action</md-filled-button>` with literal text. Resolve all text and `aria-label` props from `src/i18n/strings.ts` (`resolveA11yString(locale, key)` or `useTranslation()`) or `src/content/<locale>/*.mdx`.
+- **Tokens**: Use the synchronized Solarized MD3 tokens in `src/tokens/md3.ts` (`primary`, `onPrimary`, `surface`, `onSurface`, `surfaceContainer`, radii `extraSmall`/`small`/`medium`/`large`/`extraLarge`/`full`, durations `short3`/`medium1`/`long2`) and CSS variables in `src/theme/theme.css` (`--theme-*`, `--md-sys-color-*`, `--colors-*`). Never use `#ffffff` or `#000000`.
 
 ## Design Token System
 

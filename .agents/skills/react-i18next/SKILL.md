@@ -9,6 +9,12 @@ react-i18next is the standard internationalization framework for React / React N
 
 > **Key mental model**: i18next is the core translation engine (config, plurals, interpolation, formatting). react-i18next is the React binding layer that connects i18next to your components via hooks, HOCs, render props, and the Trans component.
 
+## `md3template` Repository Setup (Read First)
+
+- **Already Installed & Wired**: `i18next`, `react-i18next`, and `i18next-browser-languagedetector` are already configured in `src/i18n/strings.ts` (`export { i18n }`) and provided at the root shell in `src/root.tsx` via `<I18nextProvider i18n={i18n}>`.
+- **Adding Keys**: Register all UI and accessibility strings under both `en` and `fr` in `A11Y_STRINGS` inside `src/i18n/strings.ts`, and resolve them via `resolveA11yString(locale, 'key')` or `const { t } = useTranslation()`.
+- **No Raw HTML Tags in JSX**: Never render `<h1>{t('title')}</h1>` or `<div>{t('body')}</div>`—raw lowercase HTML tags are forbidden by `scripts/eslint/restricted-rules.js`. Always use `<panda.h1>{t('appTitle')}</panda.h1>`, `<Box>{t('appDescription')}</Box>`, or `@m3e/react` components.
+
 ## Installation
 
 ```bash

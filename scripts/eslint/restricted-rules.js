@@ -51,6 +51,11 @@ export const restrictedImportsRule = [
         message:
           'Tailwind CSS is disallowed in favor of Material Design 3 tokens and Panda CSS.',
       },
+      {
+        name: 'styled-system/patterns',
+        message:
+          'Importing pattern functions from styled-system/patterns is prohibited to prevent bypassing JSX style limits. Use Panda JSX layout primitives (<Box>, <Flex>, <Grid>, <Stack>, <HStack>, <VStack>, <Center>, <Container>) from "styled-system/jsx" or cva()/sva() recipes.',
+      },
     ],
     patterns: [
       {
@@ -62,23 +67,33 @@ export const restrictedImportsRule = [
         group: ['@emotion/*'],
         message: 'Emotion is prohibited. Migrate to Panda CSS.',
       },
+      {
+        group: ['*/styled-system/patterns', '*/styled-system/patterns/*'],
+        message:
+          'Importing pattern functions from styled-system/patterns is prohibited. Use Panda JSX layout primitives from "styled-system/jsx" or cva()/sva() recipes.',
+      },
     ],
   },
 ];
 
 export const restrictedSyntaxRules = [
-  // Rule 1: Prohibition of Intrinsic HTML Elements (except document root shell html/head/meta) and Generic Panda HTML Wrappers
+  // Rule 1: Prohibition of Intrinsic HTML Elements (except document root shell html/head/meta and M3 custom elements md-*/m3e-*) and Generic Panda HTML Wrappers
   {
     selector:
-      'JSXOpeningElement > JSXIdentifier[name=/^[a-z]/][name!=/^(html|head|meta)$/]',
+      'JSXOpeningElement > JSXIdentifier[name=/^[a-z]/][name!=/^(html|head|meta)$/][name!=/^(md|m3e)-/]',
     message:
-      'Direct usage of intrinsic HTML element "<{{name}}>" is strictly forbidden. Use Panda CSS atomic layout components (<Box>, <Flex>, <Stack>, etc. from "styled-system/jsx") for layout, and Material Design 3 components (@m3e/react: <M3eButton>, <M3eHeading>, <M3eTextField>, etc.) for UI primitives.',
+      'Direct usage of intrinsic HTML element "<{{name}}>" is strictly forbidden. Use Panda CSS atomic layout components (<Box>, <Flex>, <Stack>, etc. from "styled-system/jsx") for layout, and Material Design 3 components (@m3e/react: <M3eButton>, <M3eCard>, <M3eTextField>, or <md-*>/<m3e-*> custom elements) for UI primitives.',
   },
   {
     selector:
-      'JSXOpeningElement > JSXMemberExpression[object.name="panda"][property.name=/^(div|span|p|button|a|img|input|html|head|meta|link|script|style|title)$/]',
+      'JSXOpeningElement > JSXMemberExpression[property.name=/^(div|span|p|button|a|img|input|html|head|meta|link|script|style|title)$/]',
     message:
       'Direct usage of generic <panda.*> HTML/metadata wrappers (<panda.div>, <panda.span>, <panda.p>, <panda.button>, <panda.meta>, etc.) is strictly forbidden. Use dedicated Panda CSS layout primitives (<Box>, <Flex>, <Grid>, <Stack>, <HStack>, <VStack>, <Center>, etc.), Material Design 3 components, or native <html/>/<head/>/<meta/> in the document shell.',
+  },
+  {
+    selector: 'JSXOpeningElement > JSXMemberExpression[object.name!="panda"]',
+    message:
+      'Aliased or non-panda JSX member expressions (<{{object.name}}.{{property.name}}>) are forbidden. Use canonical <panda.main>, <panda.header>, <panda.section>, <panda.h1> or Panda layout components.',
   },
   // Rule 2: Prohibition of Direct DOM Element Creation
   {
@@ -144,9 +159,21 @@ export const restrictedSyntaxRules = [
   },
   {
     selector:
+      'JSXElement > JSXExpressionContainer :matches(BinaryExpression, LogicalExpression, ArrayExpression, CallExpression[callee.name="String"]) > Literal[value=/[a-zA-Z\u00C0-\u024F]/]',
+    message:
+      'Hardcoded string literal inside JSX expression (concatenation, array, or String() call) is prohibited. All user-facing content must originate from i18n resources.',
+  },
+  {
+    selector:
       ':matches(FunctionDeclaration, FunctionExpression, ArrowFunctionExpression) VariableDeclarator > Literal[value=/[a-zA-Z\u00C0-\u024F]{2,}\\s+[a-zA-Z\u00C0-\u024F]{2,}/]',
     message:
       'Hardcoded prose string assigned to a variable inside a function is prohibited. All user-facing content must originate from i18n resources.',
+  },
+  {
+    selector:
+      ':matches(FunctionDeclaration, FunctionExpression, ArrowFunctionExpression) VariableDeclarator[id.name=/^(label|text|title|heading|subtitle|message|description|caption|content|copy|placeholder|buttonText|cta|errorText|emptyText|helperText)$/] > Literal[value=/[a-zA-Z\u00C0-\u024F]/]',
+    message:
+      'Hardcoded UI string assigned to a local variable inside a function is prohibited. All user-facing content must originate from i18n resources.',
   },
   {
     selector:

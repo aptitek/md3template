@@ -54,56 +54,59 @@ Read the project before you write. Never guess a token name.
 - Changing tokens, recipes, patterns, conditions, `jsxFramework`, or `outdir` needs `panda codegen` before the new types
   or runtime exist.
 
-### Tokens and values
+### Tokens and values (`md3template` Solarized + MD3)
 
-- Use token names that exist in `<outdir>/types/tokens.d.ts`. A name that isn't there emits literal CSS or fails
-  typecheck.
-- Prefer a semantic token (`fg.muted`, `bg.subtle`) over a primitive (`gray.600`) when one exists for the job.
-- Under `strictTokens`, a raw value needs the escape hatch: `color: '[#bada55]'`. Reach for it rarely, and say why.
-- Some properties take CSS keywords, not tokens: `justifyContent: 'safe center'`, `textWrap: 'pretty'`,
-  `scrollbarWidth: 'thin'`.
+- Use token names defined in `src/tokens/md3.ts` (`styled-system/types/tokens.d.ts`). Default Tailwind tokens (`blue.500`, `emerald.500`, `gray.600`, `md`, `lg`) do **not** exist (`strictTokens: true`, no `@pandacss/preset-panda`).
+- Prefer semantic MD3 tokens (`primary`, `onPrimary`, `surface`, `onSurface`, `surfaceContainer`, `outline`) and MD3 shape tokens (`extraSmall`, `small`, `medium`, `large`, `extraLarge`, `full`).
+- **Never** use hardcoded hex/rgb/hsl colors (including escape hatches like `'[#bada55]'`); `m3-tokens/no-hardcoded-colors` forbids all hardcoded colors outside `src/tokens/md3.ts` and `src/theme/theme.css`.
+- Some properties take CSS keywords, not tokens: `justifyContent: 'center'`, `whiteSpace: 'pre-wrap'`.
 
-### Extraction, the silent failure
+### Extraction & Strict Recipe Rules (`panda-recipes/enforce-recipe-usage`)
 
-Panda emits CSS for what it can see at build time. These produce a class name and no CSS:
+Panda generates CSS at build time. Furthermore, `md3template` enforces strict AST rules on all Panda JSX elements and `css()` calls:
+
+- **Max 3 inline style properties** on any JSX element (`<Box>`, `<Flex>`, `<Grid>`, `<Stack>`, `<HStack>`, `<VStack>`, `<Center>`, `<Container>`, `<panda.*>`) or `css()` call. When >3 style properties are needed, extract a `cva()` or `sva()` recipe.
+- **Zero conditional/ternary expressions** inside JSX style props or `css({ ... })`. Always use declarative `variants` + `defaultVariants` in `cva()` or `sva()`.
+- **Zero prop spreading (`{...props}`)** on Panda layout primitives.
+- **Complete recipes**: every `cva()` or `sva()` with `variants` must also declare `defaultVariants`, and every slot in `sva({ slots: [...] })` must be styled under `base`.
 
 ```ts
 // ❌ runtime value
 css({ color: theme.accent })
 
-// ❌ dynamic key
-css({ [prop]: '4' })
+// ❌ conditional ternary in css() or JSX style prop (forbidden by panda-recipes)
+css({ bg: isActive ? 'primary' : 'surface' })
 
-// ❌ spread of a runtime object
-css({ ...propsFromSomewhere })
+// ❌ >3 properties in css() (forbidden by panda-recipes)
+css({ padding: '4', margin: '2', bg: 'surface', borderRadius: 'medium' })
 
-// ✅ both branches literal
-css({ color: isActive ? 'fg' : 'fg.muted' })
+// ✅ declarative cva() recipe with variants and defaultVariants
+export const cardRecipe = cva({
+  base: {
+    padding: '4',
+    borderRadius: 'medium',
+    color: 'onSurface',
+  },
+  variants: {
+    active: {
+      true: { bg: 'primary', color: 'onPrimary' },
+      false: { bg: 'surface', color: 'onSurface' },
+    },
+  },
+  defaultVariants: {
+    active: false,
+  },
+})
 ```
 
 - The file must match an `include` glob. A styled file outside `include` emits nothing at all.
-- Cross-file composition works when the import is a **named local import of a static value**. Default imports, namespace
-  imports, and runtime values are skipped.
+- A config-recipe variant passed only as a runtime prop emits base + `defaultVariants` only, and warns `recipe_variant_dynamic`. Pass it literally, or cover it with `staticCss`.
 
-  ```ts
-  // styles.ts
-  export const button = css.raw({ px: '4', py: '2', rounded: 'md' })
+### Picking an API in `md3template`
 
-  // button.tsx
-  css(button, { bg: 'blue.500' })
-  ```
-
-- A config-recipe variant passed only as a runtime prop emits base + `defaultVariants` only, and warns
-  `recipe_variant_dynamic`. Pass it literally, or cover it with `staticCss`.
-
-### Picking an API
-
-- **One-off styles for this element** → `css({ … })`
-- **Layout you repeat** → a pattern (`stack`, `hstack`, `grid`, `container`, …) from `<outdir>/patterns`
-- **A component with variants** → an existing recipe from `<outdir>/recipes`, or `cva` in the file
-- **JSX style props** (`<Box px="4">`, `styled.div`) → only when `jsxFramework` is set in the config
-
-Use whatever the package already uses for the same job. Consistency beats your preference.
+- **Layout containers (<= 3 static style props)** → `<Box>`, `<Flex>`, `<Grid>`, `<Stack>`, `<HStack>`, `<VStack>`, `<Center>`, `<Wrap>`, `<Circle>`, `<Square>`, `<Container>` from `styled-system/jsx`. (Never import from `styled-system/patterns` and never use `<panda.div>`, `<panda.span>`, `<panda.button>`, `<panda.meta>`, or `styled.div`.)
+- **Semantic landmarks / typography** → `<panda.main>`, `<panda.header>`, `<panda.section>`, `<panda.h1>`, `<panda.pre>`, `<panda.code>` from `styled-system/jsx`.
+- **A component with >3 styles or conditional variants** → a recipe from `styled-system/recipes` (`src/tokens/md3.ts`), or `cva()` / `sva()` from `styled-system/css`.
 
 Deciding whether something _should become_ a recipe or a slot recipe is a design call, not a styling one. Call the Skill
 tool with "panda-css-theming".
@@ -111,15 +114,15 @@ tool with "panda-css-theming".
 ### Conditions and selectors
 
 - Conditions are keys: `_hover`, `_focusVisible`, `_dark`, `_disabled`.
-- Responsive values are objects: `{ base: '4', md: '6' }`.
+- Responsive values use MD3 breakpoints (`sm`, `md`, `lg`, `xl`, `2xl`): `{ base: '4', md: '6' }`.
 - Nested selectors need `&`. Panda silently ignores a selector without it.
 
   ```ts
   // ❌ ignored
-  css({ svg: { color: 'fg' } })
+  css({ svg: { color: 'onSurface' } })
 
   // ✅
-  css({ '& svg': { color: 'fg' } })
+  css({ '& svg': { color: 'onSurface' } })
   ```
 
 - Style the element you're on. Reaching into descendants makes styles that break when the markup moves.

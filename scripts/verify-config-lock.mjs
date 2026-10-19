@@ -58,12 +58,10 @@ function runCli() {
     console.error(
       [
         '',
-        '🔒 [Config Lock Violation] Protected linter/configuration files were modified without explicit approval:',
+        '🔒 [Config Lock Violation] Committed changes to locked linter/configuration files are forbidden by repository policy:',
         details,
         '',
-        'Modifying scripts/, eslint.config.js, .dependency-cruiser.cjs, or knip.json is blocked by default to prevent bypassing architectural guardrails.',
-        'If this change is an intentional configuration update validated by a human, re-run with explicit confirmation:',
-        '   ALLOW_CONFIG_EDIT=1 git commit ...',
+        'Modifying scripts/, eslint.config.js, .dependency-cruiser.cjs, or knip.json is blocked to prevent bypassing architectural guardrails.',
         '',
       ].join('\n')
     );

@@ -48,6 +48,23 @@ jobs:
       - name: Generate Panda CSS & Cloudflare / React Router types
         run: pnpm run codegen:panda && pnpm run codegen:types
 
+      - name: Verify locked configuration & linter integrity on Pull Requests
+        if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'allow-config-edit')
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          node -e '
+            import("node:child_process").then(async ({ execSync }) => {
+              const { checkConfigLockStaged } = await import("./scripts/verify-config-lock.mjs");
+              const diff = execSync("git diff --name-only origin/${{ github.base_ref }}...HEAD", { encoding: "utf-8" });
+              const files = diff.split("\n").filter(Boolean);
+              const res = checkConfigLockStaged(files, {});
+              if (!res.pass) {
+                console.error("Locked configuration files modified in PR without allow-config-edit label:", res.lockedStagedFiles);
+                process.exit(1);
+              }
+            });
+          '
+
       - name: Run strict quality gates (ESLint, Typecheck, Boundaries, Routes, Depcruise, Deprecated, Security/Snyk, Secret-Scanner, Knip, JSCPD, Storybook CSF3, Size)
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}

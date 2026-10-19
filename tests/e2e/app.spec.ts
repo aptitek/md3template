@@ -1,6 +1,6 @@
 import { createServer, type Server } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { extname, resolve } from 'node:path';
+import { extname, resolve, sep } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
@@ -21,7 +21,7 @@ function resolveStaticFilePath(
   const cleanUrl = rawUrl.split('?')[0] || '/';
   const relativeTarget = cleanUrl === '/' ? 'index.html' : cleanUrl.slice(1);
   const fullPath = resolve(normalizedRoot, relativeTarget);
-  if (!fullPath.startsWith(`${normalizedRoot}/`)) {
+  if (!fullPath.startsWith(`${normalizedRoot}${sep}`)) {
     return null;
   }
   return existsSync(fullPath) && statSync(fullPath).isFile() ? fullPath : null;

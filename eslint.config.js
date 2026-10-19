@@ -399,7 +399,21 @@ export default defineConfig([
   {
     files: ['tests/**/*.{ts,tsx}'],
     rules: {
-      'no-restricted-syntax': 'off',
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'CallExpression > MemberExpression[object.name=/^(it|test|describe)$/][property.name=/^(skip|only|todo)$/]',
+          message:
+            'Skipped, focused, or todo tests (it.skip, test.only, it.todo, etc.) are strictly forbidden. Every test must execute and assert behavior.',
+        },
+        {
+          selector:
+            'CallExpression[callee.name=/^(it|test)$/] > :matches(ArrowFunctionExpression, FunctionExpression):not(:has(CallExpression[callee.name="expect"]))',
+          message:
+            'Test block lacks any expect() assertion. Coverage-gaming tests without assertions are strictly prohibited.',
+        },
+      ],
     },
   },
   {
