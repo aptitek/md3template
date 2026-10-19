@@ -1,10 +1,11 @@
 #!/usr/bin/env sh
 
-# Merciless dead-code, secret-scanner, zero-duplication (jscpd), CSF3 story, boundary, deprecation, and security audit (cached via Wireit)
+# Merciless dead-code, secret-scanner, zero-duplication (jscpd), CSF3 story, route hierarchy, boundary, deprecation, and security audit (cached via Wireit)
 pnpm run lint:knip
 pnpm run lint:secrets
 pnpm run lint:jscpd
 pnpm run lint:storybook
+pnpm run lint:routes
 pnpm run lint:boundaries
 pnpm run lint:deprecated
 pnpm run lint:security

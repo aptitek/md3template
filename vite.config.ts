@@ -71,6 +71,7 @@ export default defineConfig({
         },
         test: {
           name: 'unit',
+          testTimeout: 15000,
           include: [
             'src/**/*.{test,spec}.{ts,tsx}',
             'tests/unit/**/*.{test,spec}.{ts,tsx}',

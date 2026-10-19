@@ -18,6 +18,7 @@ export default {
 
     if (files.some((f) => f.includes('src/'))) {
       commands.push('node scripts/lint-error-boundaries.mjs');
+      commands.push('node scripts/lint-routes.mjs');
       commands.push('node scripts/lint-storybook-coverage.mjs');
     }
 

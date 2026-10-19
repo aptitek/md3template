@@ -17,6 +17,7 @@ import { createA11yConfig } from './scripts/eslint/a11y-config.js';
 import { cssTokensPlugin } from './scripts/eslint/css-tokens-plugin.js';
 import { m3TokensPlugin } from './scripts/eslint/m3-tokens-plugin.js';
 import { pandaRecipesPlugin } from './scripts/eslint/panda-recipes-plugin.js';
+import { reactRouterNestedPlugin } from './scripts/eslint/react-router-nested-plugin.js';
 import {
   restrictedImportsRule,
   restrictedSyntaxRules,
@@ -108,6 +109,7 @@ export default defineConfig([
     plugins: {
       'm3-tokens': m3TokensPlugin,
       'panda-recipes': pandaRecipesPlugin,
+      'react-router-nested': reactRouterNestedPlugin,
       'atomic-design': atomicDesign,
       boundaries,
       i18next,
@@ -141,6 +143,7 @@ export default defineConfig([
       'm3-tokens/enforce-shape-tokens': 'error',
       'm3-tokens/enforce-typography-tokens': 'error',
       'panda-recipes/enforce-recipe-usage': 'error',
+      'react-router-nested/enforce-nested-routes': 'error',
       'i18next/no-literal-string': [
         'error',
         {

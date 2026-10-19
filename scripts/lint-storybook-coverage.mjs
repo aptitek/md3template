@@ -96,7 +96,7 @@ export function isComponentFile(filePath) {
   return hasJsxSyntax(sourceFile) && hasExportedComponent(sourceFile);
 }
 
-function unwrapExpression(expr) {
+export function unwrapExpression(expr) {
   let current = expr;
   while (
     current &&

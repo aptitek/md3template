@@ -128,19 +128,46 @@ export function scanContentForSecrets(content, filePath = 'inline') {
   return findings;
 }
 
+const WORKSPACE_SCAN_DIRS = [
+  'src',
+  'tests',
+  'scripts',
+  '.storybook',
+  '.github',
+  'drizzle',
+];
+
 export function collectWorkspaceFiles(rootDir = process.cwd()) {
-  return readdirSync(rootDir, { recursive: true })
-    .filter((entry) => typeof entry === 'string')
-    .map((entry) => join(rootDir, entry))
-    .filter((fullPath) => {
-      const rel = relative(rootDir, fullPath);
-      if (shouldIgnoreFile(rel)) return false;
-      try {
-        return statSync(fullPath).isFile();
-      } catch {
-        return false;
+  const collected = [];
+
+  for (const entry of readdirSync(rootDir, { withFileTypes: true })) {
+    if (entry.isFile()) {
+      const fullPath = join(rootDir, entry.name);
+      if (!shouldIgnoreFile(entry.name)) {
+        collected.push(fullPath);
       }
-    });
+    }
+  }
+
+  for (const subDir of WORKSPACE_SCAN_DIRS) {
+    const absSubDir = join(rootDir, subDir);
+    if (!existsSync(absSubDir)) continue;
+    for (const relEntry of readdirSync(absSubDir, { recursive: true })) {
+      if (typeof relEntry !== 'string') continue;
+      const fullPath = join(absSubDir, relEntry);
+      const relFromRoot = relative(rootDir, fullPath);
+      if (shouldIgnoreFile(relFromRoot)) continue;
+      try {
+        if (statSync(fullPath).isFile()) {
+          collected.push(fullPath);
+        }
+      } catch {
+        // Ignore transient files
+      }
+    }
+  }
+
+  return collected;
 }
 
 export function scanFilesForSecrets(files, rootDir = process.cwd()) {

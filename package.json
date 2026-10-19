@@ -33,6 +33,7 @@
     "lint:tdd": "wireit",
     "lint:storybook": "wireit",
     "lint:boundaries": "wireit",
+    "lint:routes": "wireit",
     "lint:size": "wireit",
     "lint:fix": "wireit",
     "test": "wireit",
@@ -132,6 +133,7 @@
         "lint:tdd",
         "lint:storybook",
         "lint:boundaries",
+        "lint:routes",
         "lint:size"
       ]
     },
@@ -306,6 +308,15 @@
       ],
       "output": []
     },
+    "lint:routes": {
+      "command": "node scripts/lint-routes.mjs",
+      "files": [
+        "src/routes.ts",
+        "src/routes/**/*",
+        "scripts/lint-routes.mjs"
+      ],
+      "output": []
+    },
     "lint:size": {
       "command": "size-limit",
       "dependencies": [
@@ -348,8 +359,7 @@
     "test:coverage": {
       "command": "vitest run --coverage --project=unit --passWithNoTests",
       "dependencies": [
-        "codegen:panda",
-        "codegen:types"
+        "test:unit"
       ],
       "files": [
         "src/**/*.{ts,tsx,js,jsx}",
@@ -366,7 +376,8 @@
     "test:stories": {
       "command": "vitest run --project=storybook --passWithNoTests",
       "dependencies": [
-        "codegen:panda"
+        "codegen:panda",
+        "test:coverage"
       ],
       "files": [
         "src/**/*.{ts,tsx,js,jsx,css}",
