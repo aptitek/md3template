@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Client JS Bundle",
+    "path": "build/client/assets/*.js",
+    "limit": "150 kB"
+  },
+  {
+    "name": "Client CSS Bundle",
+    "path": "build/client/assets/*.css",
+    "limit": "50 kB"
+  }
+]

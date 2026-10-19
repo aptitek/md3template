@@ -1,0 +1,34 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/routes/**/*.{ts,tsx}!",
+    "src/**/*.stories.{ts,tsx}",
+    ".storybook/**/*.{ts,tsx}",
+    "tests/**/*.{ts,tsx}",
+    "scripts/**/*.{js,mjs}"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx,mdx}",
+    "tests/**/*.{ts,tsx}",
+    "scripts/**/*.{js,mjs}"
+  ],
+  "ignoreDependencies": [
+    "@cloudflare/vitest-plugin",
+    "@react-router/node",
+    "@sonar/scan",
+    "@testing-library/react",
+    "@testing-library/user-event",
+    "drizzle-zod",
+    "i18next",
+    "i18next-browser-languagedetector",
+    "react-i18next",
+    "rehype-react",
+    "remark-directive",
+    "remark-parse",
+    "remark-rehype",
+    "unified",
+    "vfile",
+    "zod"
+  ],
+  "ignoreBinaries": ["snyk"]
+}

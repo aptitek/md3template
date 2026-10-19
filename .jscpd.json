@@ -1,0 +1,17 @@
+{
+  "threshold": 0,
+  "reporters": ["console"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/styled-system/**",
+    "**/.react-router/**",
+    "**/build/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "**/storybook-static/**",
+    "**/.agents/**",
+    "**/.wireit/**",
+    "worker-configuration.d.ts"
+  ],
+  "path": ["src", "tests"]
+}

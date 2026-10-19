@@ -1,0 +1,17 @@
+# Pre-approve build scripts for the packages C3 itself installs that need
+# them: `workerd` downloads the platform binary and `esbuild` downloads/
+# builds native bindings. Without these, pnpm 11+ aborts the install with
+# ERR_PNPM_IGNORED_BUILDS.
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  workerd: true
+
+overrides:
+  glob: '^13.0.6'
+  handlebars: '^4.7.10'
+
+auditConfig:
+  ignoreGhsas:
+    - GHSA-86w9-cpqp-85rv # node-forge <=1.4.0 (dev-only via @sonar/scan, no patched version yet)
+    - GHSA-vfj7-8cjw-p6xm # braces <=3.0.3 (dev-only via wireit/remark/eslint, no patched version yet)

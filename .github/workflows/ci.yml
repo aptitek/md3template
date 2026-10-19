@@ -1,0 +1,82 @@
+name: CI Quality Gates, Migrations & Tests
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-migrate-test:
+    name: Lint, Migrate, Test & Build
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup toolchain via mise (Node, pnpm, Snyk)
+        uses: jdx/mise-action@v2
+        with:
+          install: true
+          cache: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Restore Wireit and tool caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            .wireit
+            node_modules/.cache
+          key: ${{ runner.os }}-quality-cache-${{ hashFiles('pnpm-lock.yaml', 'tsconfig*.json', 'eslint.config.js') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-quality-cache-${{ hashFiles('pnpm-lock.yaml', 'tsconfig*.json', 'eslint.config.js') }}-
+            ${{ runner.os }}-quality-cache-
+
+      - name: Generate Panda CSS & Cloudflare / React Router types
+        run: pnpm run codegen:panda && pnpm run codegen:types
+
+      - name: Run strict quality gates (ESLint, Typecheck, Boundaries, Depcruise, Deprecated, Security/Snyk, Knip, JSCPD, Size)
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: pnpm run lint
+
+      - name: Verify & apply database migrations (Drizzle + Local D1)
+        run: |
+          pnpm run db:check
+          pnpm run db:migrate
+
+      - name: Apply remote D1 database migrations (main branch)
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm run db:migrate:prod
+
+      - name: Install Playwright Chromium browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run Unit, Coverage, Storybook & Playwright E2E tests
+        run: pnpm run test
+
+      - name: Verify production & Storybook builds
+        run: pnpm run build
+
+      - name: Upload Playwright report & coverage artifacts
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: ci-verification-reports
+          path: |
+            playwright-report/
+            coverage/
+          retention-days: 30

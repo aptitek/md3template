@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+# Merciless dead-code, strategic error boundary, deprecation, and security audit (cached via Wireit)
+pnpm run lint:knip
+pnpm run lint:boundaries
+pnpm run lint:deprecated
+pnpm run lint:security
+
+# Run all test suites before push (unit, stories, coverage, and e2e — cached via Wireit)
+pnpm run test

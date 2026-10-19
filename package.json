@@ -1,0 +1,481 @@
+{
+  "name": "md3template",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "react-router dev",
+    "storybook": "storybook dev -p 6006",
+    "build": "wireit",
+    "build:app": "wireit",
+    "build:storybook": "wireit",
+    "typecheck": "pnpm run lint:typecheck",
+    "deploy": "pnpm run build:app && wrangler deploy",
+    "preview": "pnpm run build:app && vite preview",
+    "cf-typegen": "wrangler types",
+    "postinstall": "wrangler types",
+    "codegen:panda": "wireit",
+    "codegen:types": "wireit",
+    "lint": "wireit",
+    "lint:eslint": "wireit",
+    "lint:prettier": "wireit",
+    "lint:knip": "wireit",
+    "lint:depcruise": "wireit",
+    "lint:deprecated": "wireit",
+    "lint:security": "wireit",
+    "lint:snyk": "pnpm run lint:security",
+    "lint:jscpd": "wireit",
+    "lint:typecheck": "wireit",
+    "lint:markdown": "wireit",
+    "lint:mdx": "wireit",
+    "lint:sonar": "wireit",
+    "lint:tdd": "wireit",
+    "lint:storybook": "wireit",
+    "lint:boundaries": "wireit",
+    "lint:size": "wireit",
+    "lint:fix": "wireit",
+    "test": "wireit",
+    "test:unit": "wireit",
+    "test:stories": "wireit",
+    "test:coverage": "wireit",
+    "test:tdd": "vitest --project=unit --watch",
+    "test:e2e": "wireit",
+    "db:generate": "drizzle-kit generate",
+    "db:check": "wireit",
+    "db:migrate": "wireit",
+    "db:migrate:prod": "node scripts/db-migrate.mjs --remote",
+    "format": "prettier --write --cache --cache-location node_modules/.cache/prettier/.prettiercache --cache-strategy metadata .",
+    "format:check": "prettier --check --cache --cache-location node_modules/.cache/prettier/.prettiercache --cache-strategy metadata .",
+    "clean": "wireit",
+    "prepare": "panda codegen && wrangler types && react-router typegen && husky"
+  },
+  "wireit": {
+    "codegen:panda": {
+      "command": "panda codegen",
+      "files": [
+        "panda.config.ts",
+        "src/tokens/md3.ts",
+        "package.json"
+      ],
+      "output": [
+        "styled-system/**"
+      ]
+    },
+    "codegen:types": {
+      "command": "wrangler types && react-router typegen",
+      "files": [
+        "wrangler.jsonc",
+        "react-router.config.ts",
+        "src/routes.ts",
+        "package.json"
+      ],
+      "output": [
+        "worker-configuration.d.ts",
+        ".react-router/types/**"
+      ]
+    },
+    "build": {
+      "dependencies": [
+        "build:app",
+        "build:storybook"
+      ]
+    },
+    "build:app": {
+      "command": "react-router build",
+      "dependencies": [
+        "codegen:panda",
+        "codegen:types"
+      ],
+      "files": [
+        "src/**/*",
+        "vite.config.ts",
+        "react-router.config.ts",
+        "wrangler.jsonc",
+        "tsconfig.json",
+        "tsconfig.cloudflare.json",
+        "package.json"
+      ],
+      "output": [
+        "build/**"
+      ]
+    },
+    "build:storybook": {
+      "command": "storybook build",
+      "dependencies": [
+        "codegen:panda"
+      ],
+      "files": [
+        "src/**/*",
+        ".storybook/**/*",
+        "tsconfig.json",
+        "package.json"
+      ],
+      "output": [
+        "storybook-static/**"
+      ]
+    },
+    "lint": {
+      "dependencies": [
+        "lint:eslint",
+        "lint:prettier",
+        "lint:markdown",
+        "lint:mdx",
+        "lint:knip",
+        "lint:depcruise",
+        "lint:deprecated",
+        "lint:security",
+        "lint:jscpd",
+        "lint:typecheck",
+        "lint:sonar",
+        "lint:tdd",
+        "lint:storybook",
+        "lint:boundaries",
+        "lint:size"
+      ]
+    },
+    "lint:eslint": {
+      "command": "eslint --cache --cache-location node_modules/.cache/eslint/ --cache-strategy metadata --max-warnings 0 .",
+      "dependencies": [
+        "codegen:panda",
+        "codegen:types"
+      ],
+      "files": [
+        "src/**/*",
+        "tests/**/*",
+        "scripts/**/*",
+        ".storybook/**/*",
+        "eslint.config.js",
+        "tsconfig.json",
+        "package.json"
+      ],
+      "output": []
+    },
+    "lint:prettier": {
+      "command": "prettier --check --cache --cache-location node_modules/.cache/prettier/.prettiercache --cache-strategy metadata .",
+      "files": [
+        "src/**/*",
+        "tests/**/*",
+        "scripts/**/*",
+        ".storybook/**/*",
+        "*.{mjs,cjs,js,ts,json,jsonc,md,yml,yaml}",
+        ".prettierrc.mjs",
+        ".prettierignore"
+      ],
+      "output": []
+    },
+    "lint:knip": {
+      "command": "knip --cache --cache-location node_modules/.cache/knip/",
+      "dependencies": [
+        "codegen:panda",
+        "codegen:types"
+      ],
+      "files": [
+        "src/**/*",
+        "tests/**/*",
+        "scripts/**/*",
+        ".storybook/**/*",
+        "knip.json",
+        "package.json",
+        "tsconfig.json"
+      ],
+      "output": []
+    },
+    "lint:depcruise": {
+      "command": "depcruise src --config .dependency-cruiser.cjs --cache node_modules/.cache/dependency-cruiser --cache-strategy content",
+      "dependencies": [
+        "codegen:panda",
+        "codegen:types"
+      ],
+      "files": [
+        "src/**/*",
+        ".dependency-cruiser.cjs",
+        "tsconfig.cloudflare.json",
+        "package.json"
+      ],
+      "output": []
+    },
+    "lint:deprecated": {
+      "command": "node scripts/lint-deprecated-deps.mjs",
+      "files": [
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        "scripts/lint-deprecated-deps.mjs"
+      ],
+      "output": []
+    },
+    "lint:security": {
+      "command": "node scripts/lint-security.mjs",
+      "files": [
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        ".snyk",
+        "scripts/lint-security.mjs"
+      ],
+      "output": []
+    },
+    "lint:jscpd": {
+      "command": "jscpd --config .jscpd.json",
+      "files": [
+        "src/**/*",
+        "tests/**/*",
+        ".jscpd.json"
+      ],
+      "output": []
+    },
+    "lint:typecheck": {
+      "command": "tsc --noEmit --incremental -p tsconfig.cloudflare.json && tsc --noEmit --incremental -p tsconfig.node.json",
+      "dependencies": [
+        "codegen:panda",
+        "codegen:types"
+      ],
+      "files": [
+        "src/**/*",
+        "tests/**/*",
+        "tsconfig.json",
+        "tsconfig.cloudflare.json",
+        "tsconfig.node.json",
+        "package.json"
+      ],
+      "output": []
+    },
+    "lint:markdown": {
+      "command": "remark --frail README.md && node scripts/lint-markdown-structure.mjs",
+      "files": [
+        "**/*.md",
+        ".remarkrc.mjs",
+        "scripts/lint-markdown-structure.mjs"
+      ],
+      "output": []
+    },
+    "lint:mdx": {
+      "command": "node scripts/lint-mdx-purity.mjs",
+      "files": [
+        "**/*.mdx",
+        "scripts/lint-mdx-purity.mjs"
+      ],
+      "output": []
+    },
+    "lint:sonar": {
+      "command": "node -e \"if (process.env.SONAR_TOKEN || process.env.SONAR_HOST_URL) { require('child_process').spawnSync('sonar-scanner-npm', { stdio: 'inherit', shell: true }); } else { console.log('ℹ️ Sonar scan skipped: SONAR_TOKEN / SONAR_HOST_URL not defined'); }\"",
+      "files": [
+        "src/**/*",
+        "tests/**/*"
+      ],
+      "output": []
+    },
+    "lint:tdd": {
+      "command": "node scripts/lint-tdd-companions.mjs",
+      "files": [
+        "src/**/*",
+        "tests/**/*",
+        "scripts/lint-tdd-companions.mjs"
+      ],
+      "output": []
+    },
+    "lint:storybook": {
+      "command": "node scripts/lint-storybook-coverage.mjs",
+      "files": [
+        "src/**/*.tsx",
+        "scripts/lint-storybook-coverage.mjs"
+      ],
+      "output": []
+    },
+    "lint:boundaries": {
+      "command": "node scripts/lint-error-boundaries.mjs",
+      "files": [
+        "src/**/*",
+        "scripts/lint-error-boundaries.mjs"
+      ],
+      "output": []
+    },
+    "lint:size": {
+      "command": "size-limit",
+      "dependencies": [
+        "build:app"
+      ],
+      "files": [
+        "build/client/assets/**/*",
+        ".size-limit.json",
+        "package.json"
+      ],
+      "output": []
+    },
+    "lint:fix": {
+      "command": "eslint . --fix --cache --cache-location node_modules/.cache/eslint/ --cache-strategy metadata && knip --fix && prettier --write --cache --cache-location node_modules/.cache/prettier/.prettiercache --cache-strategy metadata ."
+    },
+    "test": {
+      "dependencies": [
+        "test:unit",
+        "test:coverage",
+        "test:stories",
+        "test:e2e"
+      ]
+    },
+    "test:unit": {
+      "command": "vitest run --project=unit --passWithNoTests",
+      "dependencies": [
+        "codegen:panda",
+        "codegen:types"
+      ],
+      "files": [
+        "src/**/*.{ts,tsx,js,jsx}",
+        "tests/unit/**/*.{ts,tsx,js,jsx}",
+        "scripts/**/*.{js,mjs}",
+        "vite.config.ts",
+        "tsconfig.json",
+        "package.json"
+      ],
+      "output": []
+    },
+    "test:coverage": {
+      "command": "vitest run --coverage --project=unit --passWithNoTests",
+      "dependencies": [
+        "codegen:panda",
+        "codegen:types"
+      ],
+      "files": [
+        "src/**/*.{ts,tsx,js,jsx}",
+        "tests/unit/**/*.{ts,tsx,js,jsx}",
+        "scripts/**/*.{js,mjs}",
+        "vite.config.ts",
+        "tsconfig.json",
+        "package.json"
+      ],
+      "output": [
+        "coverage/**"
+      ]
+    },
+    "test:stories": {
+      "command": "vitest run --project=storybook --passWithNoTests",
+      "dependencies": [
+        "codegen:panda"
+      ],
+      "files": [
+        "src/**/*.{ts,tsx,js,jsx,css}",
+        ".storybook/**/*",
+        "vite.config.ts",
+        "tsconfig.json",
+        "package.json"
+      ],
+      "output": []
+    },
+    "test:e2e": {
+      "command": "playwright test",
+      "dependencies": [
+        "build:storybook"
+      ],
+      "files": [
+        "tests/e2e/**/*.{ts,js}",
+        "playwright.config.ts",
+        "package.json"
+      ],
+      "output": []
+    },
+    "db:check": {
+      "command": "drizzle-kit check",
+      "files": [
+        "src/db/**/*",
+        "drizzle/**/*",
+        "drizzle.config.ts",
+        "package.json"
+      ],
+      "output": []
+    },
+    "db:migrate": {
+      "command": "node scripts/db-migrate.mjs",
+      "files": [
+        "src/db/**/*",
+        "drizzle/**/*",
+        "drizzle.config.ts",
+        "wrangler.jsonc",
+        "scripts/db-migrate.mjs",
+        "package.json"
+      ],
+      "output": []
+    },
+    "clean": {
+      "command": "rm -rf dist build .react-router storybook-static coverage test-results playwright-report .wireit node_modules/.cache styled-system"
+    }
+  },
+  "dependencies": {
+    "drizzle-orm": "1.0.0-rc.4",
+    "drizzle-zod": "1.0.0-beta.14-a36c63d",
+    "i18next": "^26.5.2",
+    "i18next-browser-languagedetector": "^8.2.1",
+    "isbot": "^5.1.36",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-i18next": "^17.1.0",
+    "react-router": "^8.4.0",
+    "rehype-react": "^8.0.0",
+    "remark-directive": "^4.0.0",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "unified": "^11.0.5",
+    "vfile": "^6.0.3",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@chromatic-com/storybook": "latest",
+    "@cloudflare/vite-plugin": "^1.64.0",
+    "@cloudflare/vitest-plugin": "^1.4.4",
+    "@cloudflare/workers-types": "^5.20261018.1",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "@eslint/css": "^2.0.1",
+    "@eslint/js": "^10.0.1",
+    "@mdx-js/rollup": "^3.1.1",
+    "@pandacss/dev": "^2.2.0",
+    "@pandacss/eslint-plugin": "^2.2.0",
+    "@pandacss/preset-base": "2.2.0",
+    "@pandacss/preset-panda": "2.2.0",
+    "@playwright/test": "^1.64.1",
+    "@react-router/dev": "^8.4.0",
+    "@size-limit/file": "^14.2.0",
+    "@sonar/scan": "^5.0.2",
+    "@storybook/addon-a11y": "^10.6.2",
+    "@storybook/addon-docs": "^10.6.2",
+    "@storybook/addon-mcp": "^10.6.2",
+    "@storybook/addon-vitest": "^10.6.2",
+    "@storybook/react-vite": "^10.6.2",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
+    "@types/node": "^22",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitest/browser-playwright": "latest",
+    "@vitest/coverage-v8": "latest",
+    "dependency-cruiser": "^18.6.0",
+    "drizzle-kit": "1.0.0-rc.4",
+    "eslint": "^10.13.0",
+    "eslint-plugin-boundaries": "^7.2.0",
+    "eslint-plugin-i18next": "^6.1.5",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "eslint-plugin-security": "^4.2.0",
+    "eslint-plugin-storybook": "^10.6.2",
+    "husky": "^9.1.7",
+    "jscpd": "^5.4.1",
+    "knip": "^6.41.0",
+    "lint-staged": "^17.6.0",
+    "playwright": "latest",
+    "prettier": "^3.9.10",
+    "remark-cli": "^12.0.1",
+    "remark-lint": "^10.0.1",
+    "remark-preset-lint-consistent": "^6.0.1",
+    "remark-preset-lint-recommended": "^7.0.1",
+    "size-limit": "^14.2.0",
+    "storybook": "^10.6.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.2",
+    "vite": "^8.0.3",
+    "vitest": "latest",
+    "wireit": "^0.14.13",
+    "wrangler": "^4.151.1"
+  },
+  "packageManager": "pnpm@12.14.0"
+}

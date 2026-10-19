@@ -1,0 +1,15 @@
+node_modules
+dist
+build
+.react-router
+storybook-static
+coverage
+test-results
+playwright-report
+.wireit
+.wrangler
+drizzle
+styled-system
+.agents
+pnpm-lock.yaml
+worker-configuration.d.ts

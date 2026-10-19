@@ -1,0 +1,36 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    ".react-router/types/**/*",
+    "src/**/*",
+    "styled-system/**/*",
+    "tests/**/*",
+    "worker-configuration.d.ts",
+    "vitest.shims.d.ts"
+  ],
+  "compilerOptions": {
+    "strict": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.cache/tsbuildinfo/cloudflare.tsbuildinfo",
+    "allowJs": true,
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowArbitraryExtensions": true,
+    "allowImportingTsExtensions": true,
+    "lib": ["DOM", "DOM.Iterable", "ES2023"],
+    "types": ["vite/client", "node"],
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "rootDirs": [".", "./.react-router/types"],
+    "paths": {
+      "~/*": ["./src/*"],
+      "styled-system/*": ["./styled-system/*"]
+    },
+    "esModuleInterop": true,
+    "resolveJsonModule": true
+  }
+}

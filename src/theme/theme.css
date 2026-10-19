@@ -1,0 +1,140 @@
+/**
+ * Canonical Theme System Variables
+ *
+ * Defines the complete CSS custom properties dictionary for the application,
+ * strictly mapped to Solarized color harmonies with zero pure white (#ffffff),
+ * zero pure black (#000000), and zero M3e fallback colors.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* Typography */
+  --font-title: 'Milkshake', cursive, sans-serif;
+  --font-body: 'Recursive', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-size-base: 16px;
+  --font-size-min: 12px;
+  --line-height-relaxed: 1.68;
+
+  /* Canonical Solarized 16 Palette Tokens */
+  --colors-base03: #002b36;
+  --colors-base02: #073642;
+  --colors-base01: #586e75;
+  --colors-base00: #657b83;
+  --colors-base0: #839496;
+  --colors-base1: #93a1a1;
+  --colors-base2: #eee8d5;
+  --colors-base3: #fdf6e3;
+  --colors-yellow: #b58900;
+  --colors-orange: #cb4b16;
+  --colors-red: #dc322f;
+  --colors-magenta: #d33682;
+  --colors-violet: #6c71c4;
+  --colors-blue: #268bd2;
+  --colors-cyan: #2aa198;
+  --colors-green: #859900;
+
+  /* Geometry */
+  --radius-xs: 10px;
+  --radius-sm: 16px;
+  --radius-md: 24px;
+  --radius-lg: 32px;
+  --radius-xl: 40px;
+  --radius-full: 9999px;
+
+  /* Motion */
+  --motion-fast: 240ms;
+  --motion-normal: 420ms;
+  --motion-slow: 650ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Spacing */
+  --spacing-xs: 6px;
+  --spacing-sm: 12px;
+  --spacing-md: 20px;
+  --spacing-lg: 28px;
+  --spacing-xl: 36px;
+
+  /* Default Light Theme (Solarized Light) */
+  --theme-primary: #859900;
+  --theme-on-primary: #002b36;
+  --theme-primary-container: rgba(133, 153, 0, 0.14);
+  --theme-on-primary-container: #073642;
+
+  --theme-secondary: #d33682;
+  --theme-on-secondary: #fdf6e3;
+  --theme-secondary-container: #d33682;
+  --theme-on-secondary-container: #fdf6e3;
+
+  --theme-tertiary: #268bd2;
+  --theme-on-tertiary: #002b36;
+  --theme-tertiary-container: rgba(38, 139, 210, 0.14);
+  --theme-on-tertiary-container: #073642;
+
+  --theme-error: #dc322f;
+  --theme-on-error: #fdf6e3;
+  --theme-error-container: rgba(220, 50, 47, 0.14);
+  --theme-on-error-container: #073642;
+
+  --theme-background: #eee8d5;
+  --theme-on-background: #073642;
+  --theme-surface: #eee8d5;
+  --theme-on-surface: #073642;
+  --theme-surface-variant: #eee8d5;
+  --theme-on-surface-variant: #586e75;
+  --theme-surface-dim: #eee8d5;
+  --theme-surface-bright: #fdf6e3;
+  --theme-surface-container-lowest: #fdf6e3;
+  --theme-surface-container-low: #eee8d5;
+  --theme-surface-container: #eee8d5;
+  --theme-surface-container-high: rgba(7, 54, 66, 0.06);
+  --theme-surface-container-highest: rgba(7, 54, 66, 0.1);
+
+  --theme-outline: rgba(7, 54, 66, 0.2);
+  --theme-outline-variant: rgba(7, 54, 66, 0.1);
+  --theme-shadow: rgba(7, 54, 66, 0.25);
+  --theme-scrim: rgba(0, 43, 54, 0.6);
+  --theme-inverse-surface: #073642;
+  --theme-inverse-on-surface: #fdf6e3;
+  --theme-inverse-primary: #859900;
+  --theme-surface-tint: var(--theme-primary);
+
+  /* MD3 Bridge Mappings */
+  --md-sys-color-primary: var(--theme-primary);
+  --md-sys-color-on-primary: var(--theme-on-primary);
+  --md-sys-color-surface: var(--theme-surface);
+  --md-sys-color-on-surface: var(--theme-on-surface);
+  --md-sys-color-background: var(--theme-background);
+  --md-sys-color-on-background: var(--theme-on-background);
+  --md-sys-color-outline: var(--theme-outline);
+
+  /* Panda CSS Bridge Mappings */
+  --colors-primary: var(--theme-primary);
+  --colors-on-primary: var(--theme-on-primary);
+  --colors-background: var(--theme-background);
+  --colors-on-background: var(--theme-on-background);
+  --colors-surface: var(--theme-surface);
+  --colors-on-surface: var(--theme-on-surface);
+  --colors-outline: var(--theme-outline);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --theme-background: var(--colors-base02);
+  --theme-on-background: var(--colors-base3);
+  --theme-surface: var(--colors-base02);
+  --theme-on-surface: var(--colors-base3);
+  --theme-on-surface-variant: var(--colors-base1);
+  --theme-outline: rgba(147, 161, 161, 0.22);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --theme-background: #073642;
+    --theme-on-background: #fdf6e3;
+    --theme-surface: #073642;
+    --theme-on-surface: #fdf6e3;
+  }
+}
