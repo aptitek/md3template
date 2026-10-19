@@ -1,4 +1,12 @@
-import { DEFAULT_LOCALE, isSupportedLocale, type Locale } from './locales.ts';
+import i18next from 'i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+import { initReactI18next } from 'react-i18next';
+import {
+  DEFAULT_LOCALE,
+  isSupportedLocale,
+  SUPPORTED_LOCALES,
+  type Locale,
+} from './locales.ts';
 
 export interface A11yDictionary {
   readonly appMain: string;
@@ -36,7 +44,28 @@ export const A11Y_STRINGS: Record<Locale, A11yDictionary> = {
 
 export type A11yStringKey = keyof A11yDictionary;
 
+export const i18n = i18next.createInstance();
+
+void i18n
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    resources: {
+      en: { translation: A11Y_STRINGS.en },
+      fr: { translation: A11Y_STRINGS.fr },
+    },
+    lng: DEFAULT_LOCALE,
+    fallbackLng: DEFAULT_LOCALE,
+    supportedLngs: [...SUPPORTED_LOCALES],
+    initAsync: false,
+    interpolation: {
+      escapeValue: false,
+    },
+  });
+
 export function resolveA11yString(locale: string, key: A11yStringKey): string {
-  const validLocale = isSupportedLocale(locale) ? locale : DEFAULT_LOCALE;
-  return A11Y_STRINGS[validLocale][key];
+  const validLocale: Locale = isSupportedLocale(locale)
+    ? locale
+    : DEFAULT_LOCALE;
+  return i18n.getFixedT(validLocale)(key);
 }

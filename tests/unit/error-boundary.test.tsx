@@ -44,27 +44,44 @@ describe('Strategic Error Boundary Component & Validator Gate', () => {
     expect(infoEmpty.details).toContain('unexpected error');
   });
 
-  it('resolves Error instances and unknown values across locales', () => {
+  it('resolves Error instances across development and production modes without leaking stack traces in prod', () => {
     const err = new Error('Database timeout');
-    const errInfo = resolveErrorInfo(err);
-    expect(errInfo.status).toBe(500);
-    expect(errInfo.details).toBe('Database timeout');
-    expect(errInfo.stack).toBeDefined();
+    const devInfo = resolveErrorInfo(err, 'en', true);
+    expect(devInfo.status).toBe(500);
+    expect(devInfo.details).toBe('Database timeout');
+    expect(devInfo.stack).toBeDefined();
 
-    const unknownFr = resolveErrorInfo('raw failure', 'fr');
+    const prodInfo = resolveErrorInfo(err, 'en', false);
+    expect(prodInfo.status).toBe(500);
+    expect(prodInfo.details).toBe('Database timeout');
+    expect(prodInfo.stack).toBeUndefined();
+
+    const unknownFr = resolveErrorInfo('raw failure', 'fr', false);
     expect(unknownFr.message).toBe('Erreur');
   });
 
-  it('renders ErrorBoundaryView and StrategicSectionBoundary with diagnostic attributes', () => {
+  it('renders ErrorBoundaryView and StrategicSectionBoundary with diagnostic attributes and redacts stack in prod', () => {
     const withStackHtml = renderToStaticMarkup(
       <ErrorBoundaryView
         error={new Error('Stack trace check')}
         boundary="route:home"
+        isDev={true}
       />
     );
     expect(withStackHtml).toContain('role="alert"');
     expect(withStackHtml).toContain('data-error-boundary="route:home"');
     expect(withStackHtml).toContain('[route:home]');
+    expect(withStackHtml).toContain('<pre');
+
+    const prodErrorHtml = renderToStaticMarkup(
+      <ErrorBoundaryView
+        error={new Error('Secret internal stack')}
+        boundary="route:home"
+        isDev={false}
+      />
+    );
+    expect(prodErrorHtml).toContain('data-error-boundary="route:home"');
+    expect(prodErrorHtml).not.toContain('<pre');
 
     const noStackHtml = renderToStaticMarkup(
       <ErrorBoundaryView

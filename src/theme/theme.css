@@ -2,8 +2,8 @@
  * Canonical Theme System Variables
  *
  * Defines the complete CSS custom properties dictionary for the application,
- * strictly mapped to Solarized color harmonies with zero pure white (#ffffff),
- * zero pure black (#000000), and zero M3e fallback colors.
+ * strictly synchronized with src/tokens/md3.ts and Solarized color harmonies
+ * with zero pure white (#ffffff), zero pure black (#000000), and zero M3e fallbacks.
  */
 
 :root {
@@ -35,28 +35,29 @@
   --colors-cyan: #2aa198;
   --colors-green: #859900;
 
-  /* Geometry */
-  --radius-xs: 10px;
-  --radius-sm: 16px;
-  --radius-md: 24px;
-  --radius-lg: 32px;
-  --radius-xl: 40px;
+  /* Geometry (Synchronized with md3Tokens.radii) */
+  --radius-none: 0px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 28px;
   --radius-full: 9999px;
 
-  /* Motion */
-  --motion-fast: 240ms;
-  --motion-normal: 420ms;
-  --motion-slow: 650ms;
-  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Motion (Synchronized with md3Tokens.durations & md3Tokens.easings) */
+  --motion-fast: 150ms;
+  --motion-normal: 250ms;
+  --motion-slow: 500ms;
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
 
-  /* Spacing */
-  --spacing-xs: 6px;
-  --spacing-sm: 12px;
-  --spacing-md: 20px;
-  --spacing-lg: 28px;
-  --spacing-xl: 36px;
+  /* Spacing (Synchronized with md3Tokens.spacing 8dp scale) */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
 
-  /* Default Light Theme (Solarized Light) */
+  /* Default Light Theme (Solarized Light — synchronized with md3SemanticTokens) */
   --theme-primary: #859900;
   --theme-on-primary: #002b36;
   --theme-primary-container: rgba(133, 153, 0, 0.14);
@@ -77,7 +78,7 @@
   --theme-error-container: rgba(220, 50, 47, 0.14);
   --theme-on-error-container: #073642;
 
-  --theme-background: #eee8d5;
+  --theme-background: #fdf6e3;
   --theme-on-background: #073642;
   --theme-surface: #eee8d5;
   --theme-on-surface: #073642;
@@ -121,7 +122,7 @@
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --theme-background: var(--colors-base02);
+  --theme-background: var(--colors-base03);
   --theme-on-background: var(--colors-base3);
   --theme-surface: var(--colors-base02);
   --theme-on-surface: var(--colors-base3);
@@ -132,7 +133,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --theme-background: #073642;
+    --theme-background: #002b36;
     --theme-on-background: #fdf6e3;
     --theme-surface: #073642;
     --theme-on-surface: #fdf6e3;

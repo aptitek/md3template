@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import worker, { handleFetch } from '../../src/worker.ts';
+import worker, { ensureSsrDomShim, handleFetch } from '../../src/worker.ts';
 
 describe('Cloudflare Worker Entry & Edge Error Boundary', () => {
   it('delegates incoming requests to the request handler', async () => {
@@ -45,7 +45,26 @@ describe('Cloudflare Worker Entry & Edge Error Boundary', () => {
     expect(body.message).toBe('Unhandled worker exception');
   });
 
-  it('executes default worker.fetch handler', async () => {
+  it('executes default worker.fetch handler and shims workerd SSR DOM globals idempotently', async () => {
+    const mockTarget: Record<string, unknown> = {};
+    ensureSsrDomShim(mockTarget);
+    expect(mockTarget.HTMLElement).toBeTypeOf('function');
+    const ce = mockTarget.customElements as {
+      define: (name: string, ctor: unknown) => void;
+      get: (name: string) => unknown;
+    };
+    const DummyCard = class {};
+    ce.define('m3e-card', DummyCard);
+    expect(ce.get('m3e-card')).toBe(DummyCard);
+
+    const doc = mockTarget.document as {
+      createTreeWalker: () => Record<string, unknown>;
+    };
+    expect(doc.createTreeWalker()).toEqual({});
+
+    ensureSsrDomShim(mockTarget);
+    expect(ce.get('m3e-card')).toBe(DummyCard);
+
     const req = new Request('https://example.com/');
     const res = await worker.fetch(req);
     expect(res).toBeInstanceOf(Response);

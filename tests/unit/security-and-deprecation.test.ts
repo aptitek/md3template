@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   checkDirectDependencies,
+  checkUnpinnedDependencies,
+  checkUnpinnedInManifest,
   findDeprecatedInLockfile,
 } from '../../scripts/lint-deprecated-deps.mjs';
 import {
@@ -11,7 +13,7 @@ import {
 } from '../../scripts/lint-secrets.mjs';
 import { hasSnykAuth } from '../../scripts/lint-security.mjs';
 
-describe('Deprecated Dependency Gate', () => {
+describe('Deprecated & Unpinned Dependency Gate', () => {
   it('detects deprecated packages inside lockfile content', () => {
     const sampleLockfile = `
 packages:
@@ -29,10 +31,17 @@ packages:
     expect(deprecated[0]?.reason).toContain('@cloudflare/vitest-plugin');
   });
 
-  it('verifies that the repository pnpm-lock.yaml and direct dependencies have zero deprecated packages', () => {
+  it('verifies that the repository pnpm-lock.yaml and direct dependencies have zero deprecated or unpinned ("latest") packages', () => {
     const lockfile = readFileSync('pnpm-lock.yaml', 'utf-8');
     expect(findDeprecatedInLockfile(lockfile)).toEqual([]);
     expect(checkDirectDependencies()).toEqual([]);
+    expect(checkUnpinnedDependencies()).toEqual([]);
+    expect(
+      checkUnpinnedInManifest({
+        dependencies: { react: 'latest' },
+        devDependencies: { vitest: '*' },
+      })
+    ).toHaveLength(2);
   });
 });
 

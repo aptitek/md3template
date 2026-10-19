@@ -4,6 +4,14 @@
  * Calibrated strictly to Solarized color harmonies with zero pure white/black or M3e fallbacks.
  */
 
+export const md3Breakpoints = {
+  sm: '600px',
+  md: '840px',
+  lg: '1200px',
+  xl: '1600px',
+  '2xl': '1920px',
+} as const;
+
 export const md3Tokens = {
   radii: {
     none: { value: '0px' },

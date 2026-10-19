@@ -1,4 +1,5 @@
-import { Flex, panda } from 'styled-system/jsx';
+import { M3eCard } from '@m3e/react/card';
+import { Box, Flex, panda } from 'styled-system/jsx';
 import { surfaceCard } from 'styled-system/recipes';
 import {
   ErrorBoundaryView,
@@ -45,10 +46,10 @@ export function HomeView({
       locale={locale}
     >
       <Flex align="center" justify="center">
-        <panda.div className={surfaceCard({ size: 'lg' })}>
+        <M3eCard variant="filled" className={surfaceCard({ size: 'lg' })}>
           <panda.h1 color="onSurface">{title}</panda.h1>
-          <panda.p color="onSurface">{description}</panda.p>
-        </panda.div>
+          <Box color="onSurface">{description}</Box>
+        </M3eCard>
       </Flex>
     </StrategicSectionBoundary>
   );

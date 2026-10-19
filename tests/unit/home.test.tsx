@@ -29,6 +29,7 @@ describe('Home Route Module & Strategic Boundaries', () => {
       <HomeView title="Custom Title" description="Custom Desc" locale="fr" />
     );
     expect(viewHtml).toContain('Custom Title');
+    expect(viewHtml).toContain('m3e-card');
     expect(viewHtml).toContain('data-boundary-scope="section:home-hero"');
 
     const sectionErrHtml = renderToStaticMarkup(

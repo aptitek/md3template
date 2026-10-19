@@ -1,5 +1,29 @@
 import { createRequestHandler } from 'react-router';
 
+export function ensureSsrDomShim(
+  target: Record<string, unknown> = globalThis as Record<string, unknown>
+): void {
+  if (typeof target.HTMLElement === 'undefined') {
+    const BaseElement = class {};
+    target.Node = BaseElement;
+    target.Element = BaseElement;
+    target.HTMLElement = BaseElement;
+    target.CSSStyleSheet = class {};
+    const registry = new Map<string, unknown>();
+    target.customElements = {
+      get: (name: string) => registry.get(name),
+      define: (name: string, ctor: unknown) => {
+        registry.set(name, ctor);
+      },
+    };
+    target.document = {
+      createTreeWalker: () => ({}),
+    };
+  }
+}
+
+ensureSsrDomShim();
+
 const requestHandler = createRequestHandler(
   () => import('virtual:react-router/server-build'),
   import.meta.env.MODE

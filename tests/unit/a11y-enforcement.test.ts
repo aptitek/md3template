@@ -10,6 +10,7 @@ import {
 import {
   A11Y_STRINGS,
   type A11yStringKey,
+  i18n,
   resolveA11yString,
 } from '../../src/i18n/strings.ts';
 
@@ -165,7 +166,8 @@ describe('Localized Accessibility Strings (i18n)', () => {
     }
   });
 
-  it('falls back to default locale for unknown locales', () => {
+  it('falls back to default locale for unknown locales and initializes i18next instance', () => {
+    expect(i18n.isInitialized).toBe(true);
     const fallback = resolveA11yString('unknown', 'appMain');
     expect(fallback).toBe(A11Y_STRINGS.en.appMain);
   });

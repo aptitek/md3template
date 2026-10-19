@@ -13,24 +13,11 @@
     "scripts/**/*.{js,mjs}"
   ],
   "ignoreDependencies": [
-    "@cloudflare/vitest-plugin",
     "@react-router/node",
     "@secretlint/secretlint-rule-preset-recommend",
     "@sonar/scan",
-    "@testing-library/react",
-    "@testing-library/user-event",
-    "drizzle-zod",
     "eslint-import-resolver-node",
-    "i18next",
-    "i18next-browser-languagedetector",
-    "react-i18next",
-    "rehype-react",
-    "remark-directive",
-    "remark-parse",
-    "remark-rehype",
-    "secretlint",
-    "unified",
-    "vfile"
+    "secretlint"
   ],
   "ignoreBinaries": ["snyk"]
 }

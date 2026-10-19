@@ -58,6 +58,27 @@ export function checkDirectDependencies(rootDir = process.cwd()) {
   return deprecatedDirect;
 }
 
+export function checkUnpinnedInManifest(pkgJson) {
+  const unpinned = [];
+
+  for (const section of ['dependencies', 'devDependencies']) {
+    for (const [dep, spec] of Object.entries(pkgJson[section] ?? {})) {
+      const value = String(spec).trim();
+      if (value === 'latest' || value === '*' || value === 'next') {
+        unpinned.push({ pkg: dep, specifier: value, section });
+      }
+    }
+  }
+
+  return unpinned;
+}
+
+export function checkUnpinnedDependencies(rootDir = process.cwd()) {
+  const pkgJsonPath = resolve(rootDir, 'package.json');
+  const pkgJson = JSON.parse(readFileSync(pkgJsonPath, 'utf-8'));
+  return checkUnpinnedInManifest(pkgJson);
+}
+
 function runCli() {
   const lockfilePath = resolve(process.cwd(), 'pnpm-lock.yaml');
   const lockfileContent = existsSync(lockfilePath)
@@ -66,9 +87,16 @@ function runCli() {
 
   const lockfileDeprecated = findDeprecatedInLockfile(lockfileContent);
   const directDeprecated = checkDirectDependencies(process.cwd());
-  const total = lockfileDeprecated.length + directDeprecated.length;
+  const unpinnedDeps = checkUnpinnedDependencies(process.cwd());
+  const total =
+    lockfileDeprecated.length + directDeprecated.length + unpinnedDeps.length;
 
   if (total > 0) {
+    for (const item of unpinnedDeps) {
+      console.error(
+        `❌ [Unpinned Dependency] ${item.pkg} (${item.section}) uses forbidden specifier "${item.specifier}". Pin an explicit semver range.`
+      );
+    }
     for (const item of directDeprecated) {
       console.error(
         `❌ [Deprecated Direct Dependency] ${item.pkg}: ${item.reason}`
@@ -80,13 +108,13 @@ function runCli() {
       );
     }
     console.error(
-      `\nFatal: Found ${total} deprecated dependency violation(s). Deprecated packages are strictly forbidden.`
+      `\nFatal: Found ${total} dependency hygiene violation(s). Deprecated or unpinned ("latest"/"*") packages are strictly forbidden.`
     );
     process.exit(1);
   }
 
   console.log(
-    '✅ Zero deprecated dependencies verified across package.json and pnpm-lock.yaml.'
+    '✅ Zero deprecated or unpinned dependencies verified across package.json and pnpm-lock.yaml.'
   );
 }
 

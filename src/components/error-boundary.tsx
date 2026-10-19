@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { isRouteErrorResponse } from 'react-router';
 import { sva } from 'styled-system/css';
-import { Container, panda } from 'styled-system/jsx';
+import { Box, Container, panda } from 'styled-system/jsx';
 import { DEFAULT_LOCALE } from '../i18n/locales.ts';
 import { resolveA11yString } from '../i18n/strings.ts';
 
@@ -61,23 +61,32 @@ export interface ErrorInfo {
   readonly stack?: string;
 }
 
+function resolveRouteErrorInfo(
+  error: { readonly status: number; readonly statusText: string },
+  locale: string
+): ErrorInfo {
+  if (error.status === 404) {
+    return {
+      status: 404,
+      message: resolveA11yString(locale, 'notFoundTitle'),
+      details: resolveA11yString(locale, 'notFoundDetails'),
+    };
+  }
+  return {
+    status: error.status,
+    message: resolveA11yString(locale, 'errorTitle'),
+    details:
+      error.statusText || resolveA11yString(locale, 'unexpectedErrorDetails'),
+  };
+}
+
 export function resolveErrorInfo(
   error: unknown,
-  locale: string = DEFAULT_LOCALE
+  locale: string = DEFAULT_LOCALE,
+  isDev: boolean = import.meta.env.DEV
 ): ErrorInfo {
   if (isRouteErrorResponse(error)) {
-    const isNotFound = error.status === 404;
-    const fallbackDetails = resolveA11yString(locale, 'unexpectedErrorDetails');
-    return {
-      status: error.status,
-      message: resolveA11yString(
-        locale,
-        isNotFound ? 'notFoundTitle' : 'errorTitle'
-      ),
-      details: isNotFound
-        ? resolveA11yString(locale, 'notFoundDetails')
-        : error.statusText || fallbackDetails,
-    };
+    return resolveRouteErrorInfo(error, locale);
   }
 
   if (error instanceof Error) {
@@ -85,7 +94,7 @@ export function resolveErrorInfo(
       status: 500,
       message: resolveA11yString(locale, 'errorTitle'),
       details: error.message,
-      stack: error.stack,
+      stack: isDev ? error.stack : undefined,
     };
   }
 
@@ -100,14 +109,16 @@ export interface ErrorBoundaryViewProps {
   readonly error: unknown;
   readonly boundary: StrategicBoundaryId;
   readonly locale?: string;
+  readonly isDev?: boolean;
 }
 
 export function ErrorBoundaryView({
   error,
   boundary,
   locale = DEFAULT_LOCALE,
+  isDev = import.meta.env.DEV,
 }: ErrorBoundaryViewProps) {
-  const info = resolveErrorInfo(error, locale);
+  const info = resolveErrorInfo(error, locale, isDev);
   const boundaryBadge = `[${boundary}]`;
   const styles = errorBoundaryRecipe();
 
@@ -120,16 +131,16 @@ export function ErrorBoundaryView({
       className={styles.root}
     >
       <Container>
-        <panda.div className={styles.card}>
-          <panda.p className={styles.text}>{boundaryBadge}</panda.p>
+        <Box className={styles.card}>
+          <Box className={styles.text}>{boundaryBadge}</Box>
           <panda.h1 className={styles.text}>{info.message}</panda.h1>
-          <panda.p className={styles.text}>{info.details}</panda.p>
-          {info.stack ? (
+          <Box className={styles.text}>{info.details}</Box>
+          {isDev && info.stack ? (
             <panda.pre className={styles.stackTrace}>
               <panda.code>{info.stack}</panda.code>
             </panda.pre>
           ) : null}
-        </panda.div>
+        </Box>
       </Container>
     </panda.section>
   );
@@ -154,5 +165,5 @@ export function StrategicSectionBoundary({
     );
   }
 
-  return <panda.div data-boundary-scope={boundary}>{children}</panda.div>;
+  return <Box data-boundary-scope={boundary}>{children}</Box>;
 }

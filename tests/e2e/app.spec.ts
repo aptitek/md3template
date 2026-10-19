@@ -1,6 +1,6 @@
 import { createServer, type Server } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { extname, join, resolve } from 'node:path';
+import { extname, resolve } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
@@ -14,26 +14,37 @@ const MIME_TYPES: Record<string, string> = {
   '.ico': 'image/x-icon',
 };
 
+function resolveStaticFilePath(
+  normalizedRoot: string,
+  rawUrl: string = '/'
+): string | null {
+  const cleanUrl = rawUrl.split('?')[0] || '/';
+  const relativeTarget = cleanUrl === '/' ? 'index.html' : cleanUrl.slice(1);
+  const fullPath = resolve(normalizedRoot, relativeTarget);
+  if (!fullPath.startsWith(`${normalizedRoot}/`)) {
+    return null;
+  }
+  return existsSync(fullPath) && statSync(fullPath).isFile() ? fullPath : null;
+}
+
 function startStaticServer(rootDir: string): Promise<{
   server: Server;
   baseUrl: string;
 }> {
+  const normalizedRoot = resolve(rootDir);
   return new Promise((resolvePromise) => {
     const server = createServer((req, res) => {
-      const reqUrl = (req.url ?? '/').split('?')[0] ?? '/';
-      const safePath = reqUrl === '/' ? '/index.html' : reqUrl;
-      const fullPath = join(rootDir, safePath);
-
-      if (existsSync(fullPath) && statSync(fullPath).isFile()) {
-        const ext = extname(fullPath);
-        res.writeHead(200, {
-          'Content-Type': MIME_TYPES[ext] ?? 'application/octet-stream',
-        });
-        res.end(readFileSync(fullPath));
-      } else {
+      const fullPath = resolveStaticFilePath(normalizedRoot, req.url);
+      if (!fullPath) {
         res.writeHead(404);
         res.end('Not found');
+        return;
       }
+      const ext = extname(fullPath);
+      res.writeHead(200, {
+        'Content-Type': MIME_TYPES[ext] ?? 'application/octet-stream',
+      });
+      res.end(readFileSync(fullPath));
     });
 
     server.listen(0, '127.0.0.1', () => {
@@ -44,8 +55,27 @@ function startStaticServer(rootDir: string): Promise<{
   });
 }
 
-test.describe('Storybook E2E & WCAG 2.2 AA Accessibility Gate', () => {
-  test('renders HomeView story with zero axe accessibility violations', async ({
+test.describe('Cloudflare Worker SSR & Storybook E2E WCAG 2.2 AA Gates', () => {
+  test('serves SSR application from Cloudflare Worker preview with valid metadata and zero axe violations', async ({
+    page,
+  }) => {
+    const response = await page.goto('/');
+    expect(response?.status()).toBe(200);
+    await expect(page.locator('main h1')).toContainText('MD3 Template');
+    await expect(page.locator('meta[name="viewport"]')).toHaveAttribute(
+      'content',
+      'width=device-width, initial-scale=1'
+    );
+
+    const accessibilityScanResults = await new AxeBuilder({ page })
+      .include('main')
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(accessibilityScanResults.violations).toEqual([]);
+  });
+
+  test('renders HomeView story in Storybook with zero axe accessibility violations', async ({
     page,
   }) => {
     const staticDir = resolve(process.cwd(), 'storybook-static');

@@ -2,10 +2,11 @@
  * Panda CSS Recipe Enforcement Plugin
  *
  * Enforces appropriate use of Panda CSS recipes (cva, sva, defineRecipe, defineSlotRecipe):
- * 1. Prohibits conditional/ternary expressions in JSX style props (requires recipe variants).
- * 2. Prohibits accumulating >3 inline style props on a JSX element (requires recipe extraction).
- * 3. Requires `defaultVariants` whenever `variants` is declared in a recipe.
- * 4. Requires every slot in a slot recipe (`sva` / `defineSlotRecipe`) to be styled in `base`.
+ * 1. Prohibits conditional/ternary expressions in JSX style props and css={{ ... }} objects (requires recipe variants).
+ * 2. Prohibits JSXSpreadAttribute on Panda JSX elements to prevent bypassing inline style limits.
+ * 3. Prohibits accumulating >3 inline style props or >3 properties in css={{ ... }} on a JSX element (requires recipe extraction).
+ * 4. Requires `defaultVariants` whenever `variants` is declared in a recipe.
+ * 5. Requires every slot in a slot recipe (`sva` / `defineSlotRecipe`) to be styled in `base`.
  */
 
 const NON_STYLE_JSX_ATTRIBUTES = new Set([
@@ -36,7 +37,19 @@ const NON_STYLE_JSX_ATTRIBUTES = new Set([
   'children',
 ]);
 
-const PANDA_JSX_CONTAINERS = new Set(['Box', 'Flex', 'Stack', 'Container']);
+const PANDA_JSX_CONTAINERS = new Set([
+  'Box',
+  'Flex',
+  'Stack',
+  'Container',
+  'Grid',
+  'HStack',
+  'VStack',
+  'Center',
+  'Wrap',
+  'Circle',
+  'Square',
+]);
 const RECIPE_CREATORS = new Set([
   'cva',
   'sva',
@@ -64,6 +77,36 @@ function isPandaStyledJsxOpening(node) {
     return PANDA_JSX_CONTAINERS.has(nameNode.name);
   }
   return false;
+}
+
+function isConditionalOrLogical(expr) {
+  return (
+    expr?.type === 'ConditionalExpression' || expr?.type === 'LogicalExpression'
+  );
+}
+
+function inspectCssObjectExpression(context, objExpr) {
+  for (const prop of objExpr.properties ?? []) {
+    if (prop.type === 'SpreadElement') {
+      context.report({
+        node: prop,
+        messageId: 'noSpreadAttribute',
+      });
+      continue;
+    }
+    if (prop.type !== 'Property') continue;
+
+    if (isConditionalOrLogical(prop.value)) {
+      const keyName = prop.key?.name ?? prop.key?.value ?? 'css';
+      context.report({
+        node: prop,
+        messageId: 'noConditionalStyleProp',
+        data: { prop: `css.${keyName}` },
+      });
+    } else if (prop.value?.type === 'ObjectExpression') {
+      inspectCssObjectExpression(context, prop.value);
+    }
+  }
 }
 
 function getPropertyByName(objectExpr, propName) {
@@ -121,6 +164,8 @@ export const pandaRecipesPlugin = {
             'Enforce Panda CSS recipes (cva, sva, defineRecipe, defineSlotRecipe) over ad-hoc inline or conditional style props.',
         },
         messages: {
+          noSpreadAttribute:
+            'JSX spread attributes are forbidden on Panda layout elements. Pass explicit props or extract a Panda CSS recipe (cva, sva, defineRecipe, or defineSlotRecipe).',
           noConditionalStyleProp:
             "Conditional expression in style prop '{{prop}}' is forbidden. Define a Panda CSS recipe (cva, sva, defineRecipe, or defineSlotRecipe) with declarative 'variants' and 'defaultVariants'.",
           tooManyInlineStyleProps:
@@ -138,16 +183,27 @@ export const pandaRecipesPlugin = {
 
             let stylePropCount = 0;
             for (const attr of node.attributes) {
+              if (attr.type === 'JSXSpreadAttribute') {
+                context.report({
+                  node: attr,
+                  messageId: 'noSpreadAttribute',
+                });
+                continue;
+              }
+
               if (attr.type !== 'JSXAttribute' || !attr.name?.name) continue;
               const attrName = String(attr.name.name);
               if (isNonStyleAttribute(attrName)) continue;
 
-              stylePropCount += 1;
               const expr = attr.value?.expression;
-              if (
-                expr?.type === 'ConditionalExpression' ||
-                expr?.type === 'LogicalExpression'
-              ) {
+              if (attrName === 'css' && expr?.type === 'ObjectExpression') {
+                stylePropCount += Math.max(1, expr.properties.length);
+                inspectCssObjectExpression(context, expr);
+                continue;
+              }
+
+              stylePropCount += 1;
+              if (isConditionalOrLogical(expr)) {
                 context.report({
                   node: attr,
                   messageId: 'noConditionalStyleProp',

@@ -1,36 +1,36 @@
 import type { ReactNode } from 'react';
+import { I18nextProvider } from 'react-i18next';
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
-import { panda } from 'styled-system/jsx';
+import { Box, panda } from 'styled-system/jsx';
 import { ErrorBoundaryView } from './components/error-boundary.tsx';
 import { DEFAULT_LOCALE } from './i18n/locales.ts';
-import { resolveA11yString } from './i18n/strings.ts';
+import { i18n, resolveA11yString } from './i18n/strings.ts';
 import type { Route } from './+types/root';
 import './index.css';
 
 export function Layout({ children }: { readonly children: ReactNode }) {
   return (
-    <panda.html lang={DEFAULT_LOCALE}>
-      <panda.head>
-        <panda.meta charSet="utf-8" />
-        <panda.meta
-          name="viewport"
-          content="width=device-width, initial-scale=1"
-        />
+    <html lang={DEFAULT_LOCALE}>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
-      </panda.head>
+      </head>
       <panda.body bg="background" color="onBackground">
         {children}
         <ScrollRestoration />
         <Scripts />
       </panda.body>
-    </panda.html>
+    </html>
   );
 }
 
 export function AppShell({ children }: { readonly children?: ReactNode }) {
   return (
-    <panda.div data-boundary-scope="root">{children ?? <Outlet />}</panda.div>
+    <I18nextProvider i18n={i18n}>
+      <Box data-boundary-scope="root">{children ?? <Outlet />}</Box>
+    </I18nextProvider>
   );
 }
 

@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
  * TDD Test Companion Validator
- * Enforces that every production source file in src/ has an active test companion.
+ * Enforces that every production source file in src/ has an active unit test companion (.test.ts / .test.tsx).
+ * Storybook stories (.stories.tsx) are NOT accepted as substitutes for unit tests.
  */
 
 import { existsSync, readdirSync } from 'node:fs';
-import { basename, extname, join, resolve } from 'node:path';
+import { basename, dirname, extname, join, resolve } from 'node:path';
 
 const IGNORED_SOURCE_PATTERNS = [
   /\.d\.ts$/,
@@ -27,7 +28,7 @@ function findSourceFiles(dir) {
     .filter((fullPath) => !isIgnored(fullPath));
 }
 
-const EXPLICIT_COMPANIONS = {
+export const EXPLICIT_COMPANIONS = {
   'src/tokens/md3.ts': ['tests/unit/md3-tokens.test.ts'],
   'src/db/schema.ts': ['tests/unit/db-schema.test.ts'],
   'src/i18n/locales.ts': [
@@ -40,21 +41,36 @@ const EXPLICIT_COMPANIONS = {
   ],
 };
 
-export function findCompanionForFile(relativeSrc) {
-  if (EXPLICIT_COMPANIONS[relativeSrc]) {
-    return EXPLICIT_COMPANIONS[relativeSrc].find((c) => existsSync(resolve(c)));
+export function getCandidateCompanions(relativeSrc) {
+  const normalized = relativeSrc.replaceAll('\\', '/').replace(/^\.\//, '');
+  if (EXPLICIT_COMPANIONS[normalized]) {
+    return EXPLICIT_COMPANIONS[normalized];
   }
 
-  const base = basename(relativeSrc, extname(relativeSrc));
-  const candidates = [
-    `src/${base}.test.ts`,
-    `src/${base}.test.tsx`,
-    `src/${base}.stories.tsx`,
+  const ext = extname(normalized);
+  const base = basename(normalized, ext);
+  const relDir = dirname(normalized).replace(/^src\/?/, '');
+  const subPrefix = relDir ? `${relDir}/` : '';
+  const kebabBase = base.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+
+  return [
+    `src/${subPrefix}${base}.test.ts`,
+    `src/${subPrefix}${base}.test.tsx`,
+    `tests/unit/${subPrefix}${base}.test.ts`,
+    `tests/unit/${subPrefix}${base}.test.tsx`,
+    `tests/unit/${subPrefix}${kebabBase}.test.ts`,
+    `tests/unit/${subPrefix}${kebabBase}.test.tsx`,
     `tests/unit/${base}.test.ts`,
     `tests/unit/${base}.test.tsx`,
     `tests/unit/${base.toLowerCase()}.test.ts`,
+    `tests/unit/${base.toLowerCase()}.test.tsx`,
+    `tests/unit/${kebabBase}.test.ts`,
+    `tests/unit/${kebabBase}.test.tsx`,
   ];
+}
 
+export function findCompanionForFile(relativeSrc) {
+  const candidates = getCandidateCompanions(relativeSrc);
   return candidates.find((candidate) => existsSync(resolve(candidate)));
 }
 
@@ -68,7 +84,7 @@ export function validateAllCompanions() {
     const companion = findCompanionForFile(rel);
     if (!companion) {
       errors.push(
-        `❌ [TDD Violation] Source module '${rel}' lacks a test companion. In TDD, tests are mandatory.`
+        `❌ [TDD Violation] Source module '${rel}' lacks a unit test companion (.test.ts/.test.tsx). Stories (.stories.tsx) do not substitute for unit tests.`
       );
     }
   }
@@ -84,7 +100,7 @@ function runCli() {
       console.error(err);
     }
     console.error(
-      `\nFatal: ${errors.length} file(s) lack required test companions.`
+      `\nFatal: ${errors.length} file(s) lack required unit test companions.`
     );
     process.exit(1);
   } else {

@@ -28,6 +28,13 @@ export default defineConfig({
         ]
       : []),
   ],
+  environments: {
+    ssr: {
+      resolve: {
+        conditions: ['workerd', 'worker', 'node', 'module'],
+      },
+    },
+  },
   resolve: {
     tsconfigPaths: true,
     alias: {
@@ -36,7 +43,7 @@ export default defineConfig({
     },
   },
   test: {
-    passWithNoTests: true,
+    passWithNoTests: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary', 'html'],

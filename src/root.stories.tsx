@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { panda } from 'styled-system/jsx';
+import { Box } from 'styled-system/jsx';
 import { AppShell } from './root.tsx';
 
 const meta: Meta<typeof AppShell> = {
@@ -13,6 +13,6 @@ type Story = StoryObj<typeof AppShell>;
 
 export const Default: Story = {
   args: {
-    children: <panda.p>MD3 Application Shell</panda.p>,
+    children: <Box>MD3 Application Shell</Box>,
   },
 };

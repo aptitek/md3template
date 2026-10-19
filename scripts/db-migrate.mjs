@@ -41,6 +41,19 @@ export function hasCloudflareRemoteAuth(env = process.env) {
   );
 }
 
+/**
+ * @param {string} databaseId
+ */
+export function isValidD1DatabaseId(databaseId) {
+  const trimmed = String(databaseId ?? '').trim();
+  if (!trimmed || /^0+-0+-0+-0+-0+$/.test(trimmed)) {
+    return false;
+  }
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    trimmed
+  );
+}
+
 function runCommand(cmd, args) {
   const res = spawnSync(cmd, args, {
     stdio: 'inherit',

@@ -1,4 +1,5 @@
 // Anti-Gravity Supreme Architectural Fortress ESLint Configuration
+import eslintComments from '@eslint-community/eslint-plugin-eslint-comments';
 import css from '@eslint/css';
 import js from '@eslint/js';
 import panda from '@pandacss/eslint-plugin';
@@ -399,6 +400,18 @@ export default defineConfig([
     files: ['tests/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': 'off',
+    },
+  },
+  {
+    files: [
+      'src/**/*.{ts,tsx,js,jsx,mjs,cjs}',
+      'tests/**/*.{ts,tsx,js,jsx,mjs,cjs}',
+    ],
+    plugins: {
+      '@eslint-community/eslint-comments': eslintComments,
+    },
+    rules: {
+      '@eslint-community/eslint-comments/no-use': ['error', { allow: [] }],
     },
   },
 ]);

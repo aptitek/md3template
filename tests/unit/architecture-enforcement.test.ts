@@ -7,10 +7,19 @@ import { describe, expect, it } from 'vitest';
 describe('ESLint Syntax Enforcement', () => {
   const eslint = new ESLint({ overrideConfigFile: 'eslint.config.js' });
 
-  it('prohibits intrinsic HTML elements (<div />, <button />)', async () => {
+  it('prohibits intrinsic HTML elements (<div />, <button />) and generic <panda.div>, <panda.span>, <panda.button>', async () => {
     const code = `
+import { panda } from 'styled-system/jsx';
 export function BadComponent() {
-  return <div><button type="button">Bad</button></div>;
+  return (
+    <div>
+      <button type="button">Bad</button>
+      <panda.div />
+      <panda.span />
+      <panda.button />
+      <panda.meta />
+    </div>
+  );
 }
 `;
     const results = await eslint.lintText(code, {
@@ -18,13 +27,25 @@ export function BadComponent() {
     });
     const messages = results[0]?.messages.map((m) => m.message) ?? [];
     expect(messages.some((m) => /intrinsic HTML element/i.test(m))).toBe(true);
+    expect(
+      messages.filter((m) =>
+        m.includes('Direct usage of generic <panda.*> HTML')
+      )
+    ).toHaveLength(4);
   });
 
-  it('prohibits hardcoded text literals in JSX', async () => {
+  it('prohibits hardcoded text literals, template literals, and inline prose variable bypasses in JSX', async () => {
     const code = `
 import { Flex } from 'styled-system/jsx';
 export function TextComponent() {
-  return <Flex>Unlocalized Content</Flex>;
+  const bypassText = 'Mon texte en dur';
+  return (
+    <Flex>
+      Unlocalized Content
+      {\`Texte en dur\`}
+      {bypassText}
+    </Flex>
+  );
 }
 `;
     const results = await eslint.lintText(code, {
@@ -33,6 +54,18 @@ export function TextComponent() {
     const messages = results[0]?.messages.map((m) => m.message) ?? [];
     expect(
       messages.some((m) => m.includes('Raw text literal detected in JSX'))
+    ).toBe(true);
+    expect(
+      messages.some((m) =>
+        m.includes('Hardcoded template literal in JSX is prohibited')
+      )
+    ).toBe(true);
+    expect(
+      messages.some((m) =>
+        m.includes(
+          'Hardcoded prose string assigned to a variable inside a function is prohibited'
+        )
+      )
     ).toBe(true);
   });
 
@@ -57,6 +90,22 @@ export const ButtonWrapper = (props: Record<string, unknown>) => <Box {...props}
     expect(messages.some((m) => m.includes('thin wrapper components'))).toBe(
       true
     );
+  });
+
+  it('prohibits eslint-disable comments in src/ and tests/', async () => {
+    const srcResults = await eslint.lintText(
+      '/* eslint-disable */\nexport const val = 1;\n',
+      { filePath: 'src/tokens/val.ts' }
+    );
+    const srcRuleIds = srcResults[0]?.messages.map((m) => m.ruleId) ?? [];
+    expect(srcRuleIds).toContain('@eslint-community/eslint-comments/no-use');
+
+    const testResults = await eslint.lintText(
+      '// eslint-disable-next-line @typescript-eslint/no-explicit-any\nexport const testVal = 1;\n',
+      { filePath: 'tests/unit/sample.test.ts' }
+    );
+    const testRuleIds = testResults[0]?.messages.map((m) => m.ruleId) ?? [];
+    expect(testRuleIds).toContain('@eslint-community/eslint-comments/no-use');
   });
 });
 
@@ -150,10 +199,10 @@ export { ErrorBoundaryView };
     expect(ruleIds).toContain('atomic-design/hierarchical-import');
   });
 
-  it('enforces Panda CSS recipes over conditional style props, >3 inline style props, and incomplete recipe configs', async () => {
+  it('enforces Panda CSS recipes over conditional style props, >3 inline style props, JSXSpreadAttribute, css={{ ... }} abuse, and incomplete recipe configs', async () => {
     const code = `
 import { cva, sva } from 'styled-system/css';
-import { panda } from 'styled-system/jsx';
+import { Box, Grid, HStack } from 'styled-system/jsx';
 
 export const badCva = cva({
   base: { bg: 'surface' },
@@ -167,14 +216,30 @@ export const badSva = sva({
   defaultVariants: { size: 'sm' },
 });
 
-export function BadInlineStyles({ active }: { readonly active: boolean }) {
+export function BadInlineStyles({
+  active,
+  extraProps,
+}: {
+  readonly active: boolean;
+  readonly extraProps: Record<string, unknown>;
+}) {
   return (
-    <panda.div
+    <Grid
       padding="4"
       margin="2"
       bg={active ? 'primary' : 'surface'}
       color="onSurface"
-    />
+    >
+      <HStack {...extraProps} />
+      <Box
+        css={{
+          padding: '4',
+          margin: '2',
+          bg: active ? 'primary' : 'surface',
+          color: 'onSurface',
+        }}
+      />
+    </Grid>
   );
 }
 `;
@@ -198,7 +263,17 @@ export function BadInlineStyles({ active }: { readonly active: boolean }) {
       )
     ).toBe(true);
     expect(
-      messages.some((m) => m.includes('JSX element has 4 inline style props'))
+      messages.some((m) =>
+        m.includes("Conditional expression in style prop 'css.bg' is forbidden")
+      )
     ).toBe(true);
+    expect(
+      messages.some((m) =>
+        m.includes('JSX spread attributes are forbidden on Panda layout')
+      )
+    ).toBe(true);
+    expect(
+      messages.filter((m) => m.includes('JSX element has 4 inline style props'))
+    ).toHaveLength(2);
   });
 });

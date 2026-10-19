@@ -1,5 +1,8 @@
 #!/usr/bin/env sh
 
+# Block modifications to protected configuration and linter scripts without explicit approval
+node scripts/verify-config-lock.mjs
+
 # Mechanically enforce TDD: require tests when src/ is modified
 node scripts/verify-tdd-staged.mjs
 
