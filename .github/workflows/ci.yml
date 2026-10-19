@@ -12,25 +12,30 @@ concurrency:
 
 jobs:
   quality-migrate-test:
-    name: Lint, Migrate, Test & Build
+    name: Lint, Migrate, Test & Build (Node 26)
     timeout-minutes: 30
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Setup toolchain via mise (Node, pnpm, Snyk)
-        uses: jdx/mise-action@v2
+      - name: Setup toolchain via mise (Node 26, pnpm, Snyk)
+        uses: jdx/mise-action@v5
         with:
           install: true
           cache: true
+
+      - name: Verify Node.js 26 runtime
+        run: |
+          node --version
+          node -e "if (!process.versions.node.startsWith('26.')) { console.error('Expected Node 26, got ' + process.versions.node); process.exit(1); }"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Restore Wireit and tool caches
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             .wireit
@@ -43,7 +48,7 @@ jobs:
       - name: Generate Panda CSS & Cloudflare / React Router types
         run: pnpm run codegen:panda && pnpm run codegen:types
 
-      - name: Run strict quality gates (ESLint, Typecheck, Boundaries, Depcruise, Deprecated, Security/Snyk, Secret-Scanner, Knip, JSCPD, Storybook CSF3, Size)
+      - name: Run strict quality gates (ESLint, Typecheck, Boundaries, Routes, Depcruise, Deprecated, Security/Snyk, Secret-Scanner, Knip, JSCPD, Storybook CSF3, Size)
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -72,7 +77,7 @@ jobs:
         run: pnpm run build
 
       - name: Upload Playwright report & coverage artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: ci-verification-reports

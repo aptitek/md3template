@@ -2,6 +2,9 @@
   "name": "md3template",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=26.0.0"
+  },
   "scripts": {
     "dev": "react-router dev",
     "storybook": "storybook dev -p 6006",
@@ -471,7 +474,7 @@
     "@storybook/react-vite": "^10.6.2",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",
-    "@types/node": "^22",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitest/browser-playwright": "latest",
