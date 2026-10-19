@@ -4,7 +4,7 @@ Material Design 3, Panda CSS, React Router, and Cloudflare Workers template with
 
 ## Quality Gates
 
-- **ESLint v10**: Strict TypeScript, React, ARIA (`eslint-plugin-jsx-a11y`), Security, Architectural Boundaries (`eslint-plugin-boundaries`), Panda CSS (`@pandacss/eslint-plugin`), CSS Tokens (`@eslint/css` + `css-tokens`), and MD3 Tokens (`m3-tokens`).
+- **ESLint v10**: Strict TypeScript, React, ARIA (`eslint-plugin-jsx-a11y`), Security, Atomic Design Hierarchy (`eslint-plugin-atomic-design`), Architectural Boundaries (`eslint-plugin-boundaries`), Panda CSS (`@pandacss/eslint-plugin`), CSS Tokens (`@eslint/css` + `css-tokens`), and MD3 Tokens (`m3-tokens`).
 - **TypeScript**: Strict incremental composite type-checking across application, worker, and node configs (`--incremental` `.tsbuildinfo` cached in `node_modules/.cache/tsbuildinfo/`).
 - **Strategic Error Boundaries**: Mechanically enforces error boundaries at all 4 architectural levels—Cloudflare Worker edge (`src/worker.ts`), Root Document (`src/root.tsx`), Route Modules (`src/routes/*.tsx`), and Section/Widget (`src/components/error-boundary.tsx`) (`lint:boundaries` via `scripts/lint-error-boundaries.mjs`).
 - **Dependency Cruiser**: Zero circular dependencies, zero orphans, and strict layer isolation (`--cache node_modules/.cache/dependency-cruiser`).

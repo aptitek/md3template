@@ -1,10 +1,58 @@
 import type { ReactNode } from 'react';
 import { isRouteErrorResponse } from 'react-router';
-import { Container, panda, Stack } from 'styled-system/jsx';
+import { sva } from 'styled-system/css';
+import { Container, panda } from 'styled-system/jsx';
 import { DEFAULT_LOCALE } from '../i18n/locales.ts';
 import { resolveA11yString } from '../i18n/strings.ts';
 
 type StrategicBoundaryId = 'root' | `route:${string}` | `section:${string}`;
+
+const errorBoundaryRecipe = sva({
+  slots: ['root', 'card', 'text', 'stackTrace'],
+  base: {
+    root: {
+      paddingBlock: '8',
+      paddingInline: '4',
+    },
+    card: {
+      display: 'flex',
+      flexDirection: 'column',
+      bg: 'surfaceContainer',
+      color: 'onSurface',
+    },
+    text: {
+      color: 'onSurface',
+    },
+    stackTrace: {
+      padding: '4',
+      whiteSpace: 'pre-wrap',
+      bg: 'surfaceContainerHighest',
+      color: 'onSurface',
+      borderRadius: 'small',
+    },
+  },
+  variants: {
+    density: {
+      comfortable: {
+        card: {
+          gap: '4',
+          padding: '6',
+          borderRadius: 'medium',
+        },
+      },
+      compact: {
+        card: {
+          gap: '2',
+          padding: '4',
+          borderRadius: 'small',
+        },
+      },
+    },
+  },
+  defaultVariants: {
+    density: 'comfortable',
+  },
+});
 
 export interface ErrorInfo {
   readonly status: number;
@@ -61,6 +109,7 @@ export function ErrorBoundaryView({
 }: ErrorBoundaryViewProps) {
   const info = resolveErrorInfo(error, locale);
   const boundaryBadge = `[${boundary}]`;
+  const styles = errorBoundaryRecipe();
 
   return (
     <panda.section
@@ -68,26 +117,19 @@ export function ErrorBoundaryView({
       aria-label={resolveA11yString(locale, 'errorBoundaryLabel')}
       data-error-boundary={boundary}
       data-error-status={String(info.status)}
-      paddingBlock="8"
-      paddingInline="4"
+      className={styles.root}
     >
       <Container>
-        <Stack gap="4" padding="6" bg="surfaceContainer" borderRadius="medium">
-          <panda.p color="onSurface">{boundaryBadge}</panda.p>
-          <panda.h1 color="onSurface">{info.message}</panda.h1>
-          <panda.p color="onSurface">{info.details}</panda.p>
+        <panda.div className={styles.card}>
+          <panda.p className={styles.text}>{boundaryBadge}</panda.p>
+          <panda.h1 className={styles.text}>{info.message}</panda.h1>
+          <panda.p className={styles.text}>{info.details}</panda.p>
           {info.stack ? (
-            <panda.pre
-              padding="4"
-              whiteSpace="pre-wrap"
-              bg="surfaceContainerHighest"
-              color="onSurface"
-              borderRadius="small"
-            >
+            <panda.pre className={styles.stackTrace}>
               <panda.code>{info.stack}</panda.code>
             </panda.pre>
           ) : null}
-        </Stack>
+        </panda.div>
       </Container>
     </panda.section>
   );

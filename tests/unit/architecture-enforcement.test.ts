@@ -137,4 +137,68 @@ export const badStyles = { color: '#ff00aa' };
     const messages = results[0]?.messages.map((m) => m.message) ?? [];
     expect(messages.some((m) => m.includes('Hardcoded color'))).toBe(true);
   });
+
+  it('enforces downward-only Atomic Design hierarchy via eslint-plugin-atomic-design', async () => {
+    const code = `
+import { ErrorBoundaryView } from '../components/error-boundary.tsx';
+export { ErrorBoundaryView };
+`;
+    const results = await eslint.lintText(code, {
+      filePath: 'src/tokens/badToken.ts',
+    });
+    const ruleIds = results[0]?.messages.map((m) => m.ruleId) ?? [];
+    expect(ruleIds).toContain('atomic-design/hierarchical-import');
+  });
+
+  it('enforces Panda CSS recipes over conditional style props, >3 inline style props, and incomplete recipe configs', async () => {
+    const code = `
+import { cva, sva } from 'styled-system/css';
+import { panda } from 'styled-system/jsx';
+
+export const badCva = cva({
+  base: { bg: 'surface' },
+  variants: { tone: { primary: { bg: 'primary' } } },
+});
+
+export const badSva = sva({
+  slots: ['root', 'orphanSlot'],
+  base: { root: { padding: '4' } },
+  variants: { size: { sm: { root: { padding: '2' } } } },
+  defaultVariants: { size: 'sm' },
+});
+
+export function BadInlineStyles({ active }: { readonly active: boolean }) {
+  return (
+    <panda.div
+      padding="4"
+      margin="2"
+      bg={active ? 'primary' : 'surface'}
+      color="onSurface"
+    />
+  );
+}
+`;
+    const results = await eslint.lintText(code, {
+      filePath: 'src/BadRecipeComp.tsx',
+    });
+    const messages = results[0]?.messages.map((m) => m.message) ?? [];
+    expect(
+      messages.some((m) =>
+        m.includes("defines 'variants' without 'defaultVariants'")
+      )
+    ).toBe(true);
+    expect(
+      messages.some((m) =>
+        m.includes("Slot 'orphanSlot' in slot recipe has no styles")
+      )
+    ).toBe(true);
+    expect(
+      messages.some((m) =>
+        m.includes("Conditional expression in style prop 'bg' is forbidden")
+      )
+    ).toBe(true);
+    expect(
+      messages.some((m) => m.includes('JSX element has 4 inline style props'))
+    ).toBe(true);
+  });
 });

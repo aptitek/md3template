@@ -117,6 +117,44 @@ module.exports = {
       from: { path: '^src/i18n/' },
       to: { path: '^src/(?!tokens/|i18n/)' },
     },
+    {
+      name: 'atomic-atoms-hierarchy',
+      severity: 'error',
+      comment:
+        'Atoms must not import from molecules, organisms, templates, pages, or routes.',
+      from: { path: '^src/components/atoms/' },
+      to: {
+        path: '^src/(?:components/(?:molecules|organisms|templates|pages)/|routes/)',
+      },
+    },
+    {
+      name: 'atomic-molecules-hierarchy',
+      severity: 'error',
+      comment:
+        'Molecules must not import from organisms, templates, pages, or routes.',
+      from: { path: '^src/components/molecules/' },
+      to: {
+        path: '^src/(?:components/(?:organisms|templates|pages)/|routes/)',
+      },
+    },
+    {
+      name: 'atomic-organisms-hierarchy',
+      severity: 'error',
+      comment: 'Organisms must not import from templates, pages, or routes.',
+      from: { path: '^src/components/organisms/' },
+      to: {
+        path: '^src/(?:components/(?:templates|pages)/|routes/)',
+      },
+    },
+    {
+      name: 'atomic-templates-hierarchy',
+      severity: 'error',
+      comment: 'Templates must not import from pages or routes.',
+      from: { path: '^src/components/templates/' },
+      to: {
+        path: '^src/(?:components/pages/|routes/)',
+      },
+    },
   ],
   options: {
     doNotFollow: {

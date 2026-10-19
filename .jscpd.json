@@ -1,5 +1,7 @@
 {
   "threshold": 0,
+  "minLines": 5,
+  "minTokens": 50,
   "reporters": ["console"],
   "ignore": [
     "**/node_modules/**",
@@ -11,7 +13,11 @@
     "**/storybook-static/**",
     "**/.agents/**",
     "**/.wireit/**",
+    "**/.wrangler/**",
+    "**/drizzle/**",
+    "**/playwright-report/**",
+    "**/test-results/**",
     "worker-configuration.d.ts"
   ],
-  "path": ["src", "tests"]
+  "path": ["src", "tests", "scripts"]
 }

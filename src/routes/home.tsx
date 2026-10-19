@@ -1,4 +1,6 @@
-import { Container, Flex, panda, Stack } from 'styled-system/jsx';
+import { cva } from 'styled-system/css';
+import { Container, Flex, panda } from 'styled-system/jsx';
+import { surfaceCard } from 'styled-system/recipes';
 import {
   ErrorBoundaryView,
   StrategicSectionBoundary,
@@ -6,6 +8,28 @@ import {
 import { DEFAULT_LOCALE } from '../i18n/locales.ts';
 import { resolveA11yString } from '../i18n/strings.ts';
 import type { Route } from './+types/home';
+
+const pageMainRecipe = cva({
+  base: {
+    bg: 'background',
+    color: 'onBackground',
+  },
+  variants: {
+    spacing: {
+      hero: {
+        paddingBlock: '16',
+        paddingInline: '4',
+      },
+      compact: {
+        paddingBlock: '8',
+        paddingInline: '4',
+      },
+    },
+  },
+  defaultVariants: {
+    spacing: 'hero',
+  },
+});
 
 export function meta() {
   return [
@@ -40,10 +64,7 @@ export function HomeView({
   return (
     <panda.main
       aria-label={resolveA11yString(locale, 'appMain')}
-      paddingBlock="16"
-      paddingInline="4"
-      bg="background"
-      color="onBackground"
+      className={pageMainRecipe({ spacing: 'hero' })}
     >
       <Container>
         <StrategicSectionBoundary
@@ -52,15 +73,10 @@ export function HomeView({
           locale={locale}
         >
           <Flex align="center" justify="center">
-            <Stack
-              gap="4"
-              padding="6"
-              bg="surfaceContainer"
-              borderRadius="large"
-            >
+            <panda.div className={surfaceCard({ size: 'lg' })}>
               <panda.h1 color="onSurface">{title}</panda.h1>
               <panda.p color="onSurface">{description}</panda.p>
-            </Stack>
+            </panda.div>
           </Flex>
         </StrategicSectionBoundary>
       </Container>
@@ -78,8 +94,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   return (
     <panda.main
       aria-label={resolveA11yString(DEFAULT_LOCALE, 'appMain')}
-      bg="background"
-      color="onBackground"
+      className={pageMainRecipe({ spacing: 'compact' })}
     >
       <ErrorBoundaryView
         error={error}

@@ -6,6 +6,10 @@ node scripts/verify-tdd-staged.mjs
 # Surgical staged-file enforcement via lint-staged (with ESLint + Prettier metadata caches)
 pnpm exec lint-staged
 
-# Incremental TypeScript type-check & strategic error boundary check (cached via Wireit + tsbuildinfo)
+# Incremental TypeScript type-check, secret-scanner, zero-duplication (jscpd), CSF3 story, & boundary checks (cached via Wireit)
+pnpm run lint:secrets
+pnpm run lint:jscpd
+pnpm run lint:storybook
 pnpm run lint:typecheck
 pnpm run lint:boundaries
+

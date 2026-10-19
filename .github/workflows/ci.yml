@@ -43,7 +43,7 @@ jobs:
       - name: Generate Panda CSS & Cloudflare / React Router types
         run: pnpm run codegen:panda && pnpm run codegen:types
 
-      - name: Run strict quality gates (ESLint, Typecheck, Boundaries, Depcruise, Deprecated, Security/Snyk, Knip, JSCPD, Size)
+      - name: Run strict quality gates (ESLint, Typecheck, Boundaries, Depcruise, Deprecated, Security/Snyk, Secret-Scanner, Knip, JSCPD, Storybook CSF3, Size)
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

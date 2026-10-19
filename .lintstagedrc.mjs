@@ -11,12 +11,14 @@ export default {
     if (!files.length) return [];
 
     const commands = [
+      `node scripts/lint-secrets.mjs ${files.join(' ')}`,
       `eslint --fix ${ESLINT_CACHE_ARGS} --max-warnings=0 ${files.join(' ')}`,
       `prettier --write ${PRETTIER_CACHE_ARGS} ${files.join(' ')}`,
     ];
 
     if (files.some((f) => f.includes('src/'))) {
       commands.push('node scripts/lint-error-boundaries.mjs');
+      commands.push('node scripts/lint-storybook-coverage.mjs');
     }
 
     return commands;
@@ -34,6 +36,7 @@ export default {
     const files = filenames.filter((f) => !f.includes('.agents/'));
     return files.length
       ? [
+          `node scripts/lint-secrets.mjs ${files.join(' ')}`,
           `remark --frail ${files.join(' ')}`,
           `node scripts/lint-markdown-structure.mjs ${files.join(' ')}`,
           `prettier --write ${PRETTIER_CACHE_ARGS} ${files.join(' ')}`,
@@ -44,6 +47,7 @@ export default {
     const files = filenames.filter((f) => !f.includes('.agents/'));
     return files.length
       ? [
+          `node scripts/lint-secrets.mjs ${files.join(' ')}`,
           `node scripts/lint-mdx-purity.mjs ${files.join(' ')}`,
           `prettier --write ${PRETTIER_CACHE_ARGS} ${files.join(' ')}`,
         ]
@@ -52,7 +56,10 @@ export default {
   '*.{json,jsonc,yml,yaml}': (filenames) => {
     const files = filenames.filter((f) => !f.includes('.agents/'));
     return files.length
-      ? [`prettier --write ${PRETTIER_CACHE_ARGS} ${files.join(' ')}`]
+      ? [
+          `node scripts/lint-secrets.mjs ${files.join(' ')}`,
+          `prettier --write ${PRETTIER_CACHE_ARGS} ${files.join(' ')}`,
+        ]
       : [];
   },
 };

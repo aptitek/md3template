@@ -4,8 +4,8 @@
  * Enforces that every production source file in src/ has an active test companion.
  */
 
-import { readdirSync, statSync, existsSync } from 'node:fs';
-import { join, resolve, basename, extname } from 'node:path';
+import { existsSync, readdirSync } from 'node:fs';
+import { basename, extname, join, resolve } from 'node:path';
 
 const IGNORED_SOURCE_PATTERNS = [
   /\.d\.ts$/,
@@ -20,18 +20,11 @@ function isIgnored(filePath) {
   return IGNORED_SOURCE_PATTERNS.some((p) => p.test(filePath));
 }
 
-function findSourceFiles(dir, fileList = []) {
-  const entries = readdirSync(dir);
-  for (const entry of entries) {
-    const fullPath = join(dir, entry);
-    const stat = statSync(fullPath);
-    if (stat.isDirectory()) {
-      findSourceFiles(fullPath, fileList);
-    } else if (/\.(ts|tsx)$/.test(entry) && !isIgnored(fullPath)) {
-      fileList.push(fullPath);
-    }
-  }
-  return fileList;
+function findSourceFiles(dir) {
+  return readdirSync(dir, { recursive: true })
+    .filter((entry) => typeof entry === 'string' && /\.(ts|tsx)$/.test(entry))
+    .map((entry) => join(dir, entry))
+    .filter((fullPath) => !isIgnored(fullPath));
 }
 
 const EXPLICIT_COMPANIONS = {

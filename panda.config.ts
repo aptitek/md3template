@@ -1,5 +1,5 @@
 import { defineConfig } from '@pandacss/dev';
-import { md3Tokens, md3SemanticTokens } from './src/tokens/md3.ts';
+import { md3Recipes, md3SemanticTokens, md3Tokens } from './src/tokens/md3.ts';
 
 export default defineConfig({
   presets: ['@pandacss/preset-base', '@pandacss/preset-panda'],
@@ -10,6 +10,7 @@ export default defineConfig({
     extend: {
       tokens: md3Tokens,
       semanticTokens: md3SemanticTokens,
+      recipes: md3Recipes,
     },
   },
   outdir: 'styled-system',

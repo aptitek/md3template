@@ -149,3 +149,32 @@ export const md3SemanticTokens = {
     },
   },
 } as const;
+
+export const md3Recipes = {
+  surfaceCard: {
+    className: 'md3-surface-card',
+    base: {
+      display: 'flex',
+      flexDirection: 'column',
+      bg: 'surfaceContainer',
+      color: 'onSurface',
+    },
+    variants: {
+      size: {
+        md: {
+          gap: '4',
+          padding: '6',
+          borderRadius: 'medium',
+        },
+        lg: {
+          gap: '4',
+          padding: '6',
+          borderRadius: 'large',
+        },
+      },
+    },
+    defaultVariants: {
+      size: 'lg',
+    },
+  },
+} as const;

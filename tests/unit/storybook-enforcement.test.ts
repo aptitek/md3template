@@ -1,14 +1,18 @@
 import { resolve } from 'node:path';
+import { ESLint } from 'eslint';
 import { describe, expect, it } from 'vitest';
 import {
   isComponentFile,
   isIgnored,
   validateStorybookCoverage,
   validateStoryFile,
+  validateStorySource,
 } from '../../scripts/lint-storybook-coverage.mjs';
 
-describe('Storybook Coverage Enforcement', () => {
-  it('validates that 100% of repository components have valid Storybook stories', () => {
+describe('Storybook Coverage & Strict CSF3 Format Enforcement', () => {
+  const eslint = new ESLint({ overrideConfigFile: 'eslint.config.js' });
+
+  it('validates that 100% of repository components have valid CSF3 Storybook stories', () => {
     const { errors, verified, componentFiles } = validateStorybookCoverage();
     expect(errors).toHaveLength(0);
     expect(componentFiles.length).toBeGreaterThanOrEqual(2);
@@ -50,5 +54,54 @@ describe('Storybook Coverage Enforcement', () => {
     const result = validateStoryFile(resolve('src/NonExistent.stories.tsx'));
     expect(result.valid).toBe(false);
     expect(result.error).toMatch(/does not exist/);
+  });
+
+  it('rejects legacy storiesOf() CSF0 format, Template.bind({}) CSF2 format, and CSF1/2 function stories', () => {
+    const csf0 = validateStorySource(
+      `storiesOf('Button', module).add('Primary', () => <div />);`
+    );
+    expect(csf0.valid).toBe(false);
+    expect(csf0.error).toContain('storiesOf()');
+
+    const csf2Bind = validateStorySource(`
+      const meta = { component: Comp };
+      export default meta;
+      const Template = (args) => <Comp {...args} />;
+      export const Primary = Template.bind({});
+    `);
+    expect(csf2Bind.valid).toBe(false);
+    expect(csf2Bind.error).toContain('Template.bind');
+
+    const csf1Function = validateStorySource(`
+      const meta = { component: Comp };
+      export default meta;
+      export const Primary = () => <Comp />;
+    `);
+    expect(csf1Function.valid).toBe(false);
+    expect(csf1Function.error).toContain('CSF1/CSF2 function format');
+
+    const missingComponentMeta = validateStorySource(`
+      const meta = { title: 'MissingComponent' };
+      export default meta;
+      export const Primary = {};
+    `);
+    expect(missingComponentMeta.valid).toBe(false);
+    expect(missingComponentMeta.error).toContain('component');
+  });
+
+  it('enforces CSF3 rules in ESLint for *.stories.tsx files', async () => {
+    const badStory = `
+const Template = () => null;
+export const LegacyBound = Template.bind({});
+export const LegacyArrow = () => null;
+`;
+    const results = await eslint.lintText(badStory, {
+      filePath: 'src/components/Bad.stories.tsx',
+    });
+    const messages = results[0]?.messages.map((m) => m.message) ?? [];
+    expect(messages.some((m) => m.includes('Template.bind'))).toBe(true);
+    expect(messages.some((m) => m.includes('CSF1/CSF2 function stories'))).toBe(
+      true
+    );
   });
 });

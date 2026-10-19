@@ -2,6 +2,7 @@
 import css from '@eslint/css';
 import js from '@eslint/js';
 import panda from '@pandacss/eslint-plugin';
+import atomicDesign from 'eslint-plugin-atomic-design';
 import boundaries from 'eslint-plugin-boundaries';
 import i18next from 'eslint-plugin-i18next';
 import jsxA11yPlugin from 'eslint-plugin-jsx-a11y';
@@ -15,6 +16,7 @@ import tseslint from 'typescript-eslint';
 import { createA11yConfig } from './scripts/eslint/a11y-config.js';
 import { cssTokensPlugin } from './scripts/eslint/css-tokens-plugin.js';
 import { m3TokensPlugin } from './scripts/eslint/m3-tokens-plugin.js';
+import { pandaRecipesPlugin } from './scripts/eslint/panda-recipes-plugin.js';
 import {
   restrictedImportsRule,
   restrictedSyntaxRules,
@@ -91,21 +93,42 @@ export default defineConfig([
   {
     ...pandaRecommended,
     files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      ...pandaRecommended.rules,
+      '@pandacss/extraction-diagnostics': 'error',
+      '@pandacss/no-deprecated': 'error',
+      '@pandacss/no-debug': 'error',
+      '@pandacss/no-important': 'error',
+      '@pandacss/no-physical-properties': 'error',
+      '@pandacss/no-shorthand-longhand-mix': 'error',
+    },
   },
   {
     files: ['src/**/*.{ts,tsx}'],
     plugins: {
       'm3-tokens': m3TokensPlugin,
+      'panda-recipes': pandaRecipesPlugin,
+      'atomic-design': atomicDesign,
       boundaries,
       i18next,
     },
     settings: {
+      'import/resolver': {
+        node: {
+          extensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs'],
+        },
+      },
       'boundaries/elements': [
         { type: 'tokens', pattern: 'src/tokens' },
         { type: 'theme', pattern: 'src/theme' },
         { type: 'i18n', pattern: 'src/i18n' },
         { type: 'types', pattern: 'src/types' },
         { type: 'db', pattern: 'src/db' },
+        { type: 'atoms', pattern: 'src/components/atoms' },
+        { type: 'molecules', pattern: 'src/components/molecules' },
+        { type: 'organisms', pattern: 'src/components/organisms' },
+        { type: 'templates', pattern: 'src/components/templates' },
+        { type: 'pages', pattern: 'src/components/pages' },
         { type: 'components', pattern: 'src/components' },
         { type: 'routes', pattern: 'src/routes' },
         { type: 'app', pattern: 'src' },
@@ -117,10 +140,30 @@ export default defineConfig([
       'm3-tokens/enforce-motion-tokens': 'error',
       'm3-tokens/enforce-shape-tokens': 'error',
       'm3-tokens/enforce-typography-tokens': 'error',
+      'panda-recipes/enforce-recipe-usage': 'error',
       'i18next/no-literal-string': [
         'error',
         {
           mode: 'jsx-text-only',
+        },
+      ],
+      'atomic-design/hierarchical-import': [
+        'error',
+        {
+          levels: [
+            'tokens',
+            '=i18n',
+            'atoms',
+            'molecules',
+            ['=organisms', '=components'],
+            'templates',
+            ['=routes', 'pages'],
+          ],
+          pathPatterns: [
+            'src/components/(atoms|molecules|organisms|templates|pages)/',
+            'src/(tokens|i18n|components|routes)/',
+          ],
+          module: 'strict',
         },
       ],
       'boundaries/no-unknown-files': 'error',
@@ -146,17 +189,65 @@ export default defineConfig([
               allow: { to: { element: { type: ['types', 'db'] } } },
             },
             {
-              from: { element: { type: 'components' } },
+              from: { element: { type: 'atoms' } },
               allow: {
                 to: {
                   element: {
-                    type: ['tokens', 'theme', 'i18n', 'types', 'components'],
+                    type: ['tokens', 'theme', 'i18n', 'types'],
                   },
                 },
               },
             },
             {
-              from: { element: { type: 'routes' } },
+              from: { element: { type: 'molecules' } },
+              allow: {
+                to: {
+                  element: {
+                    type: ['tokens', 'theme', 'i18n', 'types', 'atoms'],
+                  },
+                },
+              },
+            },
+            {
+              from: { element: { type: ['organisms', 'components'] } },
+              allow: {
+                to: {
+                  element: {
+                    type: [
+                      'tokens',
+                      'theme',
+                      'i18n',
+                      'types',
+                      'atoms',
+                      'molecules',
+                      'organisms',
+                      'components',
+                    ],
+                  },
+                },
+              },
+            },
+            {
+              from: { element: { type: 'templates' } },
+              allow: {
+                to: {
+                  element: {
+                    type: [
+                      'tokens',
+                      'theme',
+                      'i18n',
+                      'types',
+                      'atoms',
+                      'molecules',
+                      'organisms',
+                      'components',
+                    ],
+                  },
+                },
+              },
+            },
+            {
+              from: { element: { type: ['routes', 'pages'] } },
               allow: {
                 to: {
                   element: {
@@ -166,7 +257,12 @@ export default defineConfig([
                       'i18n',
                       'types',
                       'db',
+                      'atoms',
+                      'molecules',
+                      'organisms',
                       'components',
+                      'templates',
+                      'pages',
                       'routes',
                     ],
                   },
@@ -184,7 +280,12 @@ export default defineConfig([
                       'i18n',
                       'types',
                       'db',
+                      'atoms',
+                      'molecules',
+                      'organisms',
                       'components',
+                      'templates',
+                      'pages',
                       'routes',
                       'app',
                     ],
@@ -252,13 +353,49 @@ export default defineConfig([
   },
   ...storybook.configs['flat/recommended'],
   {
+    files: ['**/*.stories.{ts,tsx,js,jsx,mjs,cjs}'],
+    rules: {
+      'storybook/csf-component': 'error',
+      'storybook/default-exports': 'error',
+      'storybook/story-exports': 'error',
+      'storybook/no-stories-of': 'error',
+      'storybook/prefer-pascal-case': 'error',
+      'storybook/hierarchy-separator': 'error',
+      'storybook/no-redundant-story-name': 'error',
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.name='storiesOf']",
+          message:
+            'Legacy `storiesOf()` API is forbidden. Use Component Story Format (CSF3) with a default `meta` export and `StoryObj` named exports.',
+        },
+        {
+          selector: "CallExpression[callee.property.name='bind']",
+          message:
+            'Legacy CSF2 `Template.bind({})` story format is forbidden. Use CSF3 object notation (`export const MyStory: Story = { args: { ... } }`).',
+        },
+        {
+          selector:
+            'ExportNamedDeclaration > FunctionDeclaration, ExportNamedDeclaration > VariableDeclaration > VariableDeclarator[init.type="ArrowFunctionExpression"], ExportNamedDeclaration > VariableDeclaration > VariableDeclarator[init.type="FunctionExpression"]',
+          message:
+            'Legacy CSF1/CSF2 function stories are forbidden. Stories must use CSF3 object format (`export const MyStory: Story = { ... }`).',
+        },
+      ],
+    },
+  },
+  {
     files: ['**/*.stories.{ts,tsx}', 'tests/**/*.{ts,tsx}'],
     rules: {
-      'no-restricted-syntax': 'off',
       'i18next/no-literal-string': 'off',
       'max-lines': 'off',
       'max-lines-per-function': 'off',
       'security/detect-non-literal-fs-filename': 'off',
+    },
+  },
+  {
+    files: ['tests/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': 'off',
     },
   },
 ]);
