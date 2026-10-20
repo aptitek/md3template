@@ -123,10 +123,15 @@ function isCssCallExpression(node) {
 function checkCssCallExpression(context, node) {
   let totalProps = 0;
   for (const arg of node.arguments ?? []) {
-    if (arg?.type === 'ObjectExpression') {
-      totalProps += arg.properties.length;
-      inspectCssObjectExpression(context, arg);
+    if (arg?.type !== 'ObjectExpression') {
+      context.report({
+        node: arg ?? node,
+        messageId: 'noSpreadAttribute',
+      });
+      continue;
     }
+    totalProps += arg.properties.length;
+    inspectCssObjectExpression(context, arg);
   }
   if (totalProps > MAX_INLINE_STYLE_PROPS) {
     context.report({
@@ -205,10 +210,26 @@ export const pandaRecipesPlugin = {
             "Panda CSS recipe '{{fn}}' defines 'variants' without 'defaultVariants'. Always specify 'defaultVariants' for deterministic static extraction.",
           unstyledRecipeSlot:
             "Slot '{{slot}}' in slot recipe has no styles under 'base'. Every declared slot in a slot recipe anatomy must be styled.",
+          noAliasedStyledSystemImport:
+            'Aliasing styled-system imports (e.g. `import { panda as p }` or `import { css as s }`) is prohibited. Use canonical export names.',
         },
       },
       create(context) {
         return {
+          ImportDeclaration(node) {
+            if (!/styled-system/.test(String(node.source?.value ?? ''))) return;
+            for (const spec of node.specifiers ?? []) {
+              if (
+                spec.type === 'ImportSpecifier' &&
+                spec.imported?.name !== spec.local?.name
+              ) {
+                context.report({
+                  node: spec,
+                  messageId: 'noAliasedStyledSystemImport',
+                });
+              }
+            }
+          },
           JSXOpeningElement(node) {
             if (!isPandaStyledJsxOpening(node)) return;
 

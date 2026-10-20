@@ -59,11 +59,23 @@ function hasJsxSyntax(sourceFile) {
   return found;
 }
 
-function hasExportedComponent(sourceFile) {
+export function hasExportedComponent(sourceFile) {
   let found = false;
   ts.forEachChild(sourceFile, (node) => {
     if (ts.isExportAssignment(node)) {
       found = true;
+      return;
+    }
+    if (
+      ts.isExportDeclaration(node) &&
+      node.exportClause &&
+      ts.isNamedExports(node.exportClause)
+    ) {
+      for (const spec of node.exportClause.elements) {
+        if (/^[A-Z]/.test(spec.name.text)) {
+          found = true;
+        }
+      }
       return;
     }
     const hasExport = node.modifiers?.some(

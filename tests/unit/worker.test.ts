@@ -41,8 +41,14 @@ describe('Cloudflare Worker Entry & Edge Error Boundary', () => {
 
     const res = await handleFetch(req, throwingHandler);
     expect(res.status).toBe(500);
-    const body = (await res.json()) as { message: string };
+    const body = (await res.json()) as {
+      boundary: string;
+      message: string;
+      path: string;
+    };
+    expect(body.boundary).toBe('worker');
     expect(body.message).toBe('Unhandled worker exception');
+    expect(body.path).toBe('/non-error');
   });
 
   it('executes default worker.fetch handler and shims workerd SSR DOM globals idempotently', async () => {

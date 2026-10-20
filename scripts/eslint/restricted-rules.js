@@ -77,7 +77,7 @@ export const restrictedImportsRule = [
 ];
 
 export const restrictedSyntaxRules = [
-  // Rule 1: Prohibition of Intrinsic HTML Elements (except document root shell html/head/meta and M3 custom elements md-*/m3e-*) and Generic Panda HTML Wrappers
+  // Rule 1: Prohibition of Intrinsic HTML Elements (except document root shell html/head/meta and M3 custom elements md-*/m3e-*) & Generic Panda HTML Wrappers
   {
     selector:
       'JSXOpeningElement > JSXIdentifier[name=/^[a-z]/][name!=/^(html|head|meta)$/][name!=/^(md|m3e)-/]',
@@ -86,9 +86,9 @@ export const restrictedSyntaxRules = [
   },
   {
     selector:
-      'JSXOpeningElement > JSXMemberExpression[property.name=/^(div|span|p|button|a|img|input|html|head|meta|link|script|style|title)$/]',
+      'JSXOpeningElement > JSXMemberExpression[property.name=/^(div|span|p|button|a|img|input|html|head|meta|link|script|style|title|form|textarea|select|option|label|dialog|svg|canvas|iframe|table|tr|td|th|ul|ol|li)$/]',
     message:
-      'Direct usage of generic <panda.*> HTML/metadata wrappers (<panda.div>, <panda.span>, <panda.p>, <panda.button>, <panda.meta>, etc.) is strictly forbidden. Use dedicated Panda CSS layout primitives (<Box>, <Flex>, <Grid>, <Stack>, <HStack>, <VStack>, <Center>, etc.), Material Design 3 components, or native <html/>/<head/>/<meta/> in the document shell.',
+      'Direct usage of generic <panda.*> HTML/metadata wrappers (<panda.div>, <panda.span>, <panda.p>, <panda.button>, <panda.meta>, <panda.form>, <panda.svg>, etc.) is strictly forbidden. Use dedicated Panda CSS layout primitives (<Box>, <Flex>, <Grid>, <Stack>, <HStack>, <VStack>, <Center>, etc.), Material Design 3 components, or native <html/>/<head/>/<meta/> in the document shell.',
   },
   {
     selector: 'JSXOpeningElement > JSXMemberExpression[object.name!="panda"]',
@@ -140,32 +140,34 @@ export const restrictedSyntaxRules = [
     message:
       'Legacy wildcard barrel exports (export * from "...") are strictly prohibited. Import and export symbols explicitly and canonically.',
   },
-  // Rule 8: Prohibition of Hardcoded Content in JSX & Component Variables (Separation of Concerns)
+  // Rule 8: Prohibition of Hardcoded Content in JSX Elements, Fragments & Component Variables (Separation of Concerns)
   {
-    selector: 'JSXElement > JSXText[value=/[a-zA-Z0-9]/]',
+    selector:
+      ':matches(JSXElement, JSXFragment) > JSXText[value=/[a-zA-Z0-9]/]',
     message:
       'Raw text literal detected in JSX. Separation of Concerns violation: all user-facing content must originate from i18n MDX content files.',
   },
   {
     selector:
-      'JSXElement > JSXExpressionContainer > Literal[value=/[a-zA-Z0-9]/]',
+      ':matches(JSXElement, JSXFragment) > JSXExpressionContainer > Literal[value=/[a-zA-Z0-9]/]',
     message:
       'Hardcoded string literal in JSX is prohibited. Separation of Concerns violation: content must be imported from i18n MDX files.',
   },
   {
-    selector: 'JSXElement > JSXExpressionContainer > TemplateLiteral',
+    selector:
+      ':matches(JSXElement, JSXFragment) > JSXExpressionContainer > TemplateLiteral',
     message:
       'Hardcoded template literal in JSX is prohibited. Separation of Concerns violation: content must be imported from i18n MDX files.',
   },
   {
     selector:
-      'JSXElement > JSXExpressionContainer :matches(BinaryExpression, LogicalExpression, ArrayExpression, CallExpression[callee.name="String"]) > Literal[value=/[a-zA-Z\u00C0-\u024F]/]',
+      ':matches(JSXElement, JSXFragment) > JSXExpressionContainer :matches(BinaryExpression, LogicalExpression, ArrayExpression, CallExpression[callee.name="String"]) > Literal[value=/[a-zA-Z\u00C0-\u024F]/]',
     message:
       'Hardcoded string literal inside JSX expression (concatenation, array, or String() call) is prohibited. All user-facing content must originate from i18n resources.',
   },
   {
     selector:
-      ':matches(FunctionDeclaration, FunctionExpression, ArrowFunctionExpression) VariableDeclarator > Literal[value=/[a-zA-Z\u00C0-\u024F]{2,}\\s+[a-zA-Z\u00C0-\u024F]{2,}/]',
+      ':matches(FunctionDeclaration, FunctionExpression, ArrowFunctionExpression) VariableDeclarator Literal[value=/[a-zA-Z\u00C0-\u024F]{2,}\\s+[a-zA-Z\u00C0-\u024F]{2,}/]',
     message:
       'Hardcoded prose string assigned to a variable inside a function is prohibited. All user-facing content must originate from i18n resources.',
   },
@@ -177,7 +179,7 @@ export const restrictedSyntaxRules = [
   },
   {
     selector:
-      ':matches(FunctionDeclaration, FunctionExpression, ArrowFunctionExpression) VariableDeclarator > TemplateLiteral[expressions.length=0]',
+      ':matches(FunctionDeclaration, FunctionExpression, ArrowFunctionExpression) VariableDeclarator TemplateLiteral[expressions.length=0]',
     message:
       'Static template literal assigned to a variable inside a function is prohibited. All user-facing content must originate from i18n resources.',
   },

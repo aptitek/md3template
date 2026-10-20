@@ -45,7 +45,28 @@ const CORNER_PROPERTIES = new Set([
   'borderTopRightRadius',
   'borderBottomLeftRadius',
   'borderBottomRightRadius',
+  'borderStartStartRadius',
+  'borderStartEndRadius',
+  'borderEndStartRadius',
+  'borderEndEndRadius',
+  'rounded',
+  'roundedTop',
+  'roundedBottom',
+  'roundedLeft',
+  'roundedRight',
 ]);
+
+function extractJsxAttributeValue(attrNode) {
+  if (!attrNode.value) return undefined;
+  if (attrNode.value.type === 'Literal') return attrNode.value.value;
+  if (
+    attrNode.value.type === 'JSXExpressionContainer' &&
+    attrNode.value.expression?.type === 'Literal'
+  ) {
+    return attrNode.value.expression.value;
+  }
+  return undefined;
+}
 
 export const m3TokensPlugin = {
   meta: { name: 'eslint-plugin-m3-tokens' },
@@ -64,7 +85,7 @@ export const m3TokensPlugin = {
       },
       create(context) {
         const HEX_REGEX = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
-        const FN_REGEX = /^(rgb|hsl)a?\s*\(/i;
+        const FN_REGEX = /^(rgb|hsl|oklch|lab|lch)a?\s*\(/i;
 
         function checkColor(val, node) {
           if (typeof val !== 'string') return;
@@ -111,28 +132,45 @@ export const m3TokensPlugin = {
         },
       },
       create(context) {
+        function checkMotionProp(key, val, targetNode) {
+          if (
+            key === 'ease' ||
+            key === 'easing' ||
+            key === 'transitionTimingFunction'
+          ) {
+            if (typeof val === 'string' && /cubic-bezier/i.test(val)) {
+              context.report({
+                node: targetNode,
+                messageId: 'noHardcodedBezier',
+                data: { value: val },
+              });
+            }
+          }
+          if (
+            (key === 'duration' || key === 'transitionDuration') &&
+            (typeof val === 'number' ||
+              (typeof val === 'string' && /^\d+(ms|s)$/.test(val)))
+          ) {
+            context.report({
+              node: targetNode,
+              messageId: 'noHardcodedDuration',
+              data: { value: String(val) },
+            });
+          }
+        }
+
         return {
           Property(node) {
             const key = node.key?.name || node.key?.value;
-            if (key === 'ease' || key === 'easing') {
-              if (
-                typeof node.value?.value === 'string' &&
-                /cubic-bezier/i.test(node.value.value)
-              ) {
-                context.report({
-                  node: node.value,
-                  messageId: 'noHardcodedBezier',
-                  data: { value: node.value.value },
-                });
-              }
-            }
-            if (key === 'duration' && typeof node.value?.value === 'number') {
-              context.report({
-                node: node.value,
-                messageId: 'noHardcodedDuration',
-                data: { value: String(node.value.value) },
-              });
-            }
+            checkMotionProp(key, node.value?.value, node.value || node);
+          },
+          JSXAttribute(node) {
+            const key = node.name?.name;
+            checkMotionProp(
+              key,
+              extractJsxAttributeValue(node),
+              node.value || node
+            );
           },
         };
       },
@@ -150,21 +188,30 @@ export const m3TokensPlugin = {
         },
       },
       create(context) {
+        function checkCornerProp(propName, val, targetNode) {
+          if (!CORNER_PROPERTIES.has(propName) || val === undefined) return;
+          if (typeof val === 'string' && val.startsWith('var(--')) return;
+          if (!APPROVED_SHAPE_CORNERS.has(val)) {
+            context.report({
+              node: targetNode,
+              messageId: 'invalidCorner',
+              data: { value: String(val) },
+            });
+          }
+        }
+
         return {
           Property(node) {
             const propName = node.key?.name || node.key?.value;
-            if (!CORNER_PROPERTIES.has(propName)) return;
-
-            const val = node.value?.value;
-            if (typeof val === 'string' && val.startsWith('var(--')) return;
-
-            if (val !== undefined && !APPROVED_SHAPE_CORNERS.has(val)) {
-              context.report({
-                node: node.value || node,
-                messageId: 'invalidCorner',
-                data: { value: String(val) },
-              });
-            }
+            checkCornerProp(propName, node.value?.value, node.value || node);
+          },
+          JSXAttribute(node) {
+            const propName = node.name?.name;
+            checkCornerProp(
+              propName,
+              extractJsxAttributeValue(node),
+              node.value || node
+            );
           },
         };
       },
@@ -183,26 +230,39 @@ export const m3TokensPlugin = {
         },
       },
       create(context) {
+        function checkFontFamilyProp(propName, val, targetNode) {
+          if (propName !== 'fontFamily' && propName !== 'font-family') return;
+          if (typeof val !== 'string') return;
+          if (
+            val.includes('var(--font-family-') ||
+            val === 'inherit' ||
+            val === 'initial'
+          ) {
+            return;
+          }
+          context.report({
+            node: targetNode,
+            messageId: 'noRawFontFamily',
+            data: { value: val },
+          });
+        }
+
         return {
           Property(node) {
             const propName = node.key?.name || node.key?.value;
-            if (propName !== 'fontFamily' && propName !== 'font-family') return;
-
-            const val = node.value?.value;
-            if (typeof val !== 'string') return;
-            if (
-              val.includes('var(--font-family-') ||
-              val === 'inherit' ||
-              val === 'initial'
-            ) {
-              return;
-            }
-
-            context.report({
-              node: node.value,
-              messageId: 'noRawFontFamily',
-              data: { value: val },
-            });
+            checkFontFamilyProp(
+              propName,
+              node.value?.value,
+              node.value || node
+            );
+          },
+          JSXAttribute(node) {
+            const propName = node.name?.name;
+            checkFontFamilyProp(
+              propName,
+              extractJsxAttributeValue(node),
+              node.value || node
+            );
           },
         };
       },

@@ -29,6 +29,8 @@ const requestHandler = createRequestHandler(
   import.meta.env.MODE
 );
 
+const DEFAULT_WORKER_ERROR = 'Unhandled worker exception';
+
 export interface WorkerErrorPayload {
   readonly boundary: 'worker';
   readonly message: string;
@@ -43,7 +45,7 @@ export async function handleFetch(
     return await handler(request);
   } catch (error: unknown) {
     const message =
-      error instanceof Error ? error.message : 'Unhandled worker exception';
+      error instanceof Error ? error.message : DEFAULT_WORKER_ERROR;
     const path = new URL(request.url).pathname;
     const payload: WorkerErrorPayload = {
       boundary: 'worker',

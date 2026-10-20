@@ -10,9 +10,13 @@ import { getGitStagedFiles } from './verify-tdd-staged.mjs';
 
 const LOCKED_FILE_PATTERNS = [
   /^scripts\//,
+  /^\.husky\//,
+  /^\.github\//,
   /^eslint\.config\.js$/,
   /^\.dependency-cruiser\.cjs$/,
   /^knip\.json$/,
+  /^\.jscpd\.json$/,
+  /^\.size-limit\.json$/,
 ];
 
 export function isLockedConfigFile(filePath) {

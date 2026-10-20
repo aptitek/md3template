@@ -42,26 +42,41 @@ export function BadComponent({ text }: { readonly text: string }) {
       )
     ).toHaveLength(5);
     expect(
+      messages.some((m) => m.includes('Aliasing styled-system imports'))
+    ).toBe(true);
+    expect(
       messages.some((m) =>
         m.includes('Aliased or non-panda JSX member expressions')
       )
     ).toBe(true);
   });
 
-  it('prohibits hardcoded text literals, template literals, string expressions, and local prose/UI variables in JSX', async () => {
+  it('prohibits hardcoded text literals, template literals, string expressions, JSX fragments, and local prose/UI variables or objects in JSX while allowing {children} and {cond && <Comp />}', async () => {
     const code = `
+import type { ReactNode } from 'react';
 import { Flex } from 'styled-system/jsx';
-export function TextComponent({ name }: { readonly name: string }) {
-  const bypassText = 'Mon texte en dur';
+export function TextComponent({
+  name,
+  children,
+  show,
+}: {
+  readonly name: string;
+  readonly children: ReactNode;
+  readonly show: boolean;
+}) {
+  const bypassObj = { title: 'Mon texte en dur' };
   const label = 'Submit';
   return (
     <Flex>
       Unlocalized Content
+      <>{'Fragment hardcoded'}</>
       {\`Texte en dur\`}
-      {bypassText}
+      {bypassObj.title}
       {label}
       {'Hello ' + name}
       {String('Inline')}
+      {children}
+      {show && <Flex />}
     </Flex>
   );
 }
@@ -72,6 +87,11 @@ export function TextComponent({ name }: { readonly name: string }) {
     const messages = results[0]?.messages.map((m) => m.message) ?? [];
     expect(
       messages.some((m) => m.includes('Raw text literal detected in JSX'))
+    ).toBe(true);
+    expect(
+      messages.some((m) =>
+        m.includes('Hardcoded string literal in JSX is prohibited')
+      )
     ).toBe(true);
     expect(
       messages.some((m) =>
@@ -224,15 +244,24 @@ export function StyledComp() {
     ).toBe(true);
   });
 
-  it('prohibits hardcoded colors outside token variables', async () => {
+  it('prohibits hardcoded colors and shape radii in both objects and JSX attributes outside token variables', async () => {
     const code = `
+import { Box } from 'styled-system/jsx';
 export const badStyles = { color: '#ff00aa' };
+export function BadTokensJsx() {
+  return <Box bg="#ff00aa" rounded="99px" />;
+}
 `;
     const results = await eslint.lintText(code, {
-      filePath: 'src/badStyles.ts',
+      filePath: 'src/badStyles.tsx',
     });
     const messages = results[0]?.messages.map((m) => m.message) ?? [];
-    expect(messages.some((m) => m.includes('Hardcoded color'))).toBe(true);
+    expect(messages.filter((m) => m.includes('Hardcoded color'))).toHaveLength(
+      2
+    );
+    expect(
+      messages.some((m) => m.includes("Non-standard corner radius '99px'"))
+    ).toBe(true);
   });
 
   it('enforces downward-only Atomic Design hierarchy via eslint-plugin-atomic-design', async () => {
@@ -278,6 +307,7 @@ export function BadInlineStyles({
     bg: active ? 'primary' : 'surface',
     color: 'onSurface',
   });
+  const varBypass = css(extraProps);
   return (
     <Grid
       className={flex()}
@@ -286,7 +316,7 @@ export function BadInlineStyles({
       bg={active ? 'primary' : 'surface'}
       color="onSurface"
     >
-      <HStack className={inlineClass} {...extraProps} />
+      <HStack className={inlineClass} data-bypass={varBypass} {...extraProps} />
       <Box
         css={{
           padding: '4',
@@ -331,10 +361,10 @@ export function BadInlineStyles({
       )
     ).toHaveLength(2);
     expect(
-      messages.some((m) =>
+      messages.filter((m) =>
         m.includes('JSX spread attributes are forbidden on Panda layout')
       )
-    ).toBe(true);
+    ).toHaveLength(2);
     expect(
       messages.filter((m) => m.includes('JSX element has 4 inline style props'))
     ).toHaveLength(3);

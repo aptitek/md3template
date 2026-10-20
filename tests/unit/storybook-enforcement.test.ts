@@ -1,7 +1,9 @@
 import { resolve } from 'node:path';
 import { ESLint } from 'eslint';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import {
+  hasExportedComponent,
   isComponentFile,
   isIgnored,
   validateStorybookCoverage,
@@ -23,11 +25,19 @@ describe('Storybook Coverage & Strict CSF3 Format Enforcement', () => {
     expect(componentNames).toContain('src/routes/home.tsx');
   });
 
-  it('correctly identifies React component files vs non-component files', () => {
+  it('correctly identifies React component files vs non-component files, including separate export { MyView } clauses', () => {
     expect(isComponentFile(resolve('src/root.tsx'))).toBe(true);
     expect(isComponentFile(resolve('src/routes/home.tsx'))).toBe(true);
     expect(isComponentFile(resolve('src/worker.ts'))).toBe(false);
     expect(isComponentFile(resolve('src/tokens/md3.ts'))).toBe(false);
+
+    const separateExportAst = ts.createSourceFile(
+      'MyView.tsx',
+      'function MyView() { return null; } export { MyView };',
+      ts.ScriptTarget.Latest,
+      true
+    );
+    expect(hasExportedComponent(separateExportAst)).toBe(true);
   });
 
   it('filters out ignored paths like main, stories, tests, and d.ts', () => {
