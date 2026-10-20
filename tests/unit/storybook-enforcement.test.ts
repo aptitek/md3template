@@ -9,7 +9,7 @@ import {
   validateStorybookCoverage,
   validateStoryFile,
   validateStorySource,
-} from '../../scripts/lint-storybook-coverage.mjs';
+} from '../../scripts/lint-storybook-coverage.ts';
 
 describe('Storybook Coverage & Strict CSF3 Format Enforcement', () => {
   const eslint = new ESLint({ overrideConfigFile: 'eslint.config.js' });

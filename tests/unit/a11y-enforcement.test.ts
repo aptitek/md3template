@@ -1,7 +1,7 @@
 import { ESLint } from 'eslint';
 import { describe, expect, it } from 'vitest';
-import { a11yConfig } from '../../scripts/eslint/a11y-config.js';
-import { restrictedSyntaxRules } from '../../scripts/eslint/restricted-rules.js';
+import { a11yConfig } from '../../scripts/eslint/a11y-config.ts';
+import { restrictedSyntaxRules } from '../../scripts/eslint/restricted-rules.ts';
 import {
   DEFAULT_LOCALE,
   isSupportedLocale,

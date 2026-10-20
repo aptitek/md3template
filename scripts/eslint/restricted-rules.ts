@@ -11,57 +11,55 @@
  * 7. Total ban on hardcoded text literals in JSX and default props (forcing i18n).
  * 8. Total ban on textual content in CSS styles.
  */
+import type { Linter } from 'eslint';
 
-export const restrictedImportsRule = [
+export interface RestrictedSyntaxSelector {
+  readonly selector: string;
+  readonly message: string;
+}
+
+export const restrictedImportsRule: Linter.RuleEntry = [
   'error',
   {
     paths: [
       {
         name: '@mui/material',
-        message:
-          'MUI is deprecated. Use Material Design 3 components from @m3e/react and Panda CSS atomic layout.',
+        message: 'MUI is deprecated. Use @m3e/react and Panda CSS.',
       },
       {
         name: '@mui/system',
-        message:
-          'MUI is deprecated. Use Material Design 3 components from @m3e/react and Panda CSS atomic layout.',
+        message: 'MUI is deprecated. Use @m3e/react and Panda CSS.',
       },
       {
         name: '@mui/icons-material',
-        message:
-          'MUI is deprecated. Use Material Design 3 icons from @m3e/icons.',
+        message: 'MUI is deprecated. Use @m3e/icons.',
       },
       {
         name: '@emotion/react',
-        message:
-          'Emotion is prohibited. Use Panda CSS compile-time atomic styles.',
+        message: 'Emotion is prohibited. Use Panda CSS.',
       },
       {
         name: '@emotion/styled',
-        message:
-          'Emotion is prohibited. Use Panda CSS compile-time atomic styles.',
+        message: 'Emotion is prohibited. Use Panda CSS.',
       },
       {
         name: '@tailwindcss/vite',
-        message:
-          'Tailwind CSS is disallowed in favor of Material Design 3 tokens and Panda CSS.',
+        message: 'Tailwind CSS is disallowed. Use MD3 tokens and Panda CSS.',
       },
       {
         name: 'tailwindcss',
-        message:
-          'Tailwind CSS is disallowed in favor of Material Design 3 tokens and Panda CSS.',
+        message: 'Tailwind CSS is disallowed. Use MD3 tokens and Panda CSS.',
       },
       {
         name: 'styled-system/patterns',
         message:
-          'Importing pattern functions from styled-system/patterns is prohibited to prevent bypassing JSX style limits. Use Panda JSX layout primitives (<Box>, <Flex>, <Grid>, <Stack>, <HStack>, <VStack>, <Center>, <Container>) from "styled-system/jsx" or cva()/sva() recipes.',
+          'Importing pattern functions from styled-system/patterns is prohibited to prevent bypassing JSX style limits. Use Panda JSX layout primitives from "styled-system/jsx" or cva()/sva() recipes.',
       },
     ],
     patterns: [
       {
         group: ['@mui/*'],
-        message:
-          'MUI is deprecated in this ecosystem. Migrate to @m3e/react and Panda CSS.',
+        message: 'MUI is deprecated. Migrate to @m3e/react and Panda CSS.',
       },
       {
         group: ['@emotion/*'],
@@ -76,7 +74,7 @@ export const restrictedImportsRule = [
   },
 ];
 
-export const restrictedSyntaxRules = [
+export const restrictedSyntaxRules: readonly RestrictedSyntaxSelector[] = [
   // Rule 1: Prohibition of Intrinsic HTML Elements (except document root shell html/head/meta and M3 custom elements md-*/m3e-*) & Generic Panda HTML Wrappers
   {
     selector:
@@ -204,18 +202,77 @@ export const restrictedSyntaxRules = [
     message:
       'Hardcoded localized string detected in fallback expression. Content must originate from i18n MDX files.',
   },
-  // Rule 12: Hardcoded Localized String in Accessibility and Alt Attributes (Direct Literal)
+  // Rule 12 & 13: Hardcoded Localized String in Accessibility and Alt Attributes
   {
     selector:
-      'JSXAttribute[name.name=/^(alt|aria-label|aria-placeholder|aria-roledescription|aria-valuetext|title)$/] > Literal[value=/[a-zA-Z\u00C0-\u024F]/]',
+      'JSXAttribute[name.name=/^(alt|aria-label|aria-placeholder|aria-roledescription|aria-valuetext|title)$/] > :matches(Literal, JSXExpressionContainer > Literal)[value=/[a-zA-Z\u00C0-\u024F]/]',
     message:
       'Hardcoded localized string detected in attribute "{{name.name}}". Separation of Concerns violation: all user-facing alt text and accessibility labels must originate from i18n content.',
   },
-  // Rule 13: Hardcoded Localized String in Accessibility and Alt Attributes (Expression Literal)
+  // Rule 14: Ban on Unsafe Type Assertions (as T, <T>x, x!) and Manual Type Predicates (x is T)
   {
     selector:
-      'JSXAttribute[name.name=/^(alt|aria-label|aria-placeholder|aria-roledescription|aria-valuetext|title)$/] > JSXExpressionContainer > Literal[value=/[a-zA-Z\u00C0-\u024F]/]',
+      'TSAsExpression[typeAnnotation.typeName.name!="const"], TSTypeAssertion',
     message:
-      'Hardcoded localized string detected in attribute "{{name.name}}". Separation of Concerns violation: all user-facing alt text and accessibility labels must originate from i18n content.',
+      'Unsafe type assertion (`as T` / `<T>x`) is forbidden in src/ (unsafeCoerce). Use `as const` or a validated schema/smart constructor instead.',
+  },
+  {
+    selector: 'TSNonNullExpression',
+    message:
+      'Non-null assertion (`x!`) is forbidden in src/. Handle null and undefined explicitly.',
+  },
+  {
+    selector: 'TSTypePredicate',
+    message:
+      'Manual type predicate (`x is T`) is forbidden in src/ to prevent unsound type narrowing. Use discriminated unions or total conversion functions.',
+  },
+  // Rule 15: Pure Functional Immutability & Control Flow
+  {
+    selector: 'VariableDeclaration[kind=/^(let|var)$/]',
+    message:
+      'Mutable variable binding (`let`/`var`) is forbidden in src/ (functional/no-let). Use immutable `const` bindings for referential transparency.',
+  },
+  {
+    selector: 'AssignmentExpression',
+    message:
+      'Imperative variable or property reassignment is forbidden in src/ (functional/immutable-data). Return new immutable values instead.',
+  },
+  {
+    selector:
+      ':matches(ForStatement, ForInStatement, ForOfStatement, WhileStatement, DoWhileStatement)',
+    message:
+      'Imperative loop (`for`/`while`) is forbidden in src/. Use declarative functional transformations (`.map()`, `.filter()`, `.reduce()`).',
+  },
+  {
+    selector:
+      'CallExpression > MemberExpression[property.name=/^(push|pop|shift|unshift|splice|sort|reverse|fill|copyWithin)$/]',
+    message:
+      'Mutating collection method (`.push()`, `.pop()`, `.splice()`, `.sort()`, etc.) is forbidden in src/. Use immutable alternatives (`.toSorted()`, `.toSpliced()`, `.toReversed()`, `.concat()`, `.map()`, `.filter()`).',
+  },
+  {
+    selector: 'IfStatement[alternate!=null]',
+    message:
+      'Imperative `else` / `else if` branch is forbidden in src/. Use early returns or declarative expressions.',
+  },
+  // Rule 16: True Atomic Purity
+  {
+    selector: 'CallExpression[callee.name="panda"]',
+    message:
+      'Recreating HTML primitives via `panda("tag", ...)` factory calls is forbidden. Use dedicated Panda layout primitives (<Box>, <Flex>, <Grid>, <Stack>, <Container>) with `cva()`/`sva()` recipes or Material Design 3 (@m3e/react) components.',
+  },
+  {
+    selector:
+      'ImportSpecifier[imported.name=/^(useEffect|useLayoutEffect)$/], CallExpression[callee.name=/^(useEffect|useLayoutEffect)$/]',
+    message:
+      'Imperative side-effect hooks (`useEffect` / `useLayoutEffect`) are forbidden in UI components and routes. Derive state purely during render or use React Router loaders/actions.',
+  },
+];
+
+export const tsxStrictI18nSyntaxRules: readonly RestrictedSyntaxSelector[] = [
+  {
+    selector:
+      ':matches(VariableDeclarator, Property, AssignmentPattern, ReturnStatement, ArrayExpression) > Literal[value=/^[A-Z\u00C0-\u00DE][a-z\u00DF-\u00FF]{2,}/]',
+    message:
+      'Hardcoded capitalized UI string literal in .tsx module is prohibited (even outside JSX/functions). All user-facing strings must originate from `src/i18n/strings.ts` or MDX content.',
   },
 ];

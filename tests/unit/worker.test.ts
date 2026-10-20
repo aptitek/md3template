@@ -20,6 +20,9 @@ describe('Cloudflare Worker Entry & Edge Error Boundary', () => {
 
     const res = await handleFetch(req, throwingHandler);
     expect(res.status).toBe(500);
+    expect(res.headers.get('content-type')).toBe(
+      'application/json; charset=utf-8'
+    );
     expect(res.headers.get('x-error-boundary')).toBe('worker');
     const body = (await res.json()) as {
       boundary: string;
@@ -55,6 +58,9 @@ describe('Cloudflare Worker Entry & Edge Error Boundary', () => {
     const mockTarget: Record<string, unknown> = {};
     ensureSsrDomShim(mockTarget);
     expect(mockTarget.HTMLElement).toBeTypeOf('function');
+    expect(mockTarget.Node).toBe(mockTarget.HTMLElement);
+    expect(mockTarget.Element).toBe(mockTarget.HTMLElement);
+    expect(mockTarget.CSSStyleSheet).toBeTypeOf('function');
     const ce = mockTarget.customElements as {
       define: (name: string, ctor: unknown) => void;
       get: (name: string) => unknown;
@@ -69,7 +75,10 @@ describe('Cloudflare Worker Entry & Edge Error Boundary', () => {
     expect(doc.createTreeWalker()).toEqual({});
 
     ensureSsrDomShim(mockTarget);
-    expect(ce.get('m3e-card')).toBe(DummyCard);
+    expect(mockTarget.customElements).toBe(ce);
+    expect((mockTarget.customElements as typeof ce).get('m3e-card')).toBe(
+      DummyCard
+    );
 
     const req = new Request('https://example.com/');
     const res = await worker.fetch(req);

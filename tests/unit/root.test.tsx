@@ -21,6 +21,7 @@ describe('Root Application Module', () => {
     const rootBoundaryHtml = renderToStaticMarkup(
       <ErrorBoundary error={new Error('Fatal crash')} params={{}} />
     );
+    expect(rootBoundaryHtml).toContain('aria-label="Main application content"');
     expect(rootBoundaryHtml).toContain('data-error-boundary="root"');
     expect(rootBoundaryHtml).toContain('Fatal crash');
   });

@@ -2,27 +2,17 @@ import type { ReactNode } from 'react';
 import { isRouteErrorResponse } from 'react-router';
 import { sva } from 'styled-system/css';
 import { Box, Container, panda } from 'styled-system/jsx';
+import { surfaceCard } from 'styled-system/recipes';
 import { DEFAULT_LOCALE } from '../i18n/locales.ts';
 import { resolveA11yString } from '../i18n/strings.ts';
 
 type StrategicBoundaryId = 'root' | `route:${string}` | `section:${string}`;
 
 const errorBoundaryRecipe = sva({
-  slots: ['root', 'card', 'text', 'stackTrace'],
+  slots: ['root', 'text', 'stackTrace'],
   base: {
-    root: {
-      paddingBlock: '8',
-      paddingInline: '4',
-    },
-    card: {
-      display: 'flex',
-      flexDirection: 'column',
-      bg: 'surfaceContainer',
-      color: 'onSurface',
-    },
-    text: {
-      color: 'onSurface',
-    },
+    root: { paddingBlock: '8', paddingInline: '4' },
+    text: { color: 'onSurface' },
     stackTrace: {
       padding: '4',
       whiteSpace: 'pre-wrap',
@@ -33,25 +23,11 @@ const errorBoundaryRecipe = sva({
   },
   variants: {
     density: {
-      comfortable: {
-        card: {
-          gap: '4',
-          padding: '6',
-          borderRadius: 'medium',
-        },
-      },
-      compact: {
-        card: {
-          gap: '2',
-          padding: '4',
-          borderRadius: 'small',
-        },
-      },
+      comfortable: { root: { paddingBlock: '8', paddingInline: '4' } },
+      compact: { root: { paddingBlock: '4', paddingInline: '2' } },
     },
   },
-  defaultVariants: {
-    density: 'comfortable',
-  },
+  defaultVariants: { density: 'comfortable' },
 });
 
 export interface ErrorInfo {
@@ -80,29 +56,43 @@ function resolveRouteErrorInfo(
   };
 }
 
-export function resolveErrorInfo(
+function resolveErrorInstanceInfo(
+  error: Error,
+  locale: string,
+  isDev: boolean
+): ErrorInfo {
+  return {
+    status: 500,
+    message: resolveA11yString(locale, 'errorTitle'),
+    details: error.message,
+    stack: isDev ? error.stack : undefined,
+  };
+}
+
+function resolveErrorInfoCore(
   error: unknown,
-  locale: string = DEFAULT_LOCALE,
-  isDev: boolean = import.meta.env.DEV
+  locale: string,
+  isDev: boolean
 ): ErrorInfo {
   if (isRouteErrorResponse(error)) {
     return resolveRouteErrorInfo(error, locale);
   }
-
   if (error instanceof Error) {
-    return {
-      status: 500,
-      message: resolveA11yString(locale, 'errorTitle'),
-      details: error.message,
-      stack: isDev ? error.stack : undefined,
-    };
+    return resolveErrorInstanceInfo(error, locale, isDev);
   }
-
   return {
     status: 500,
     message: resolveA11yString(locale, 'errorTitle'),
     details: resolveA11yString(locale, 'unexpectedErrorDetails'),
   };
+}
+
+export function resolveErrorInfo(
+  error: unknown,
+  locale: string = DEFAULT_LOCALE,
+  isDev?: boolean
+): ErrorInfo {
+  return resolveErrorInfoCore(error, locale, isDev ?? import.meta.env.DEV);
 }
 
 export interface ErrorBoundaryViewProps {
@@ -112,34 +102,38 @@ export interface ErrorBoundaryViewProps {
   readonly isDev?: boolean;
 }
 
-export function ErrorBoundaryView({
-  error,
-  boundary,
-  locale = DEFAULT_LOCALE,
-  isDev = import.meta.env.DEV,
-}: ErrorBoundaryViewProps) {
-  const info = resolveErrorInfo(error, locale, isDev);
-  const boundaryBadge = `[${boundary}]`;
+function renderStackTrace(
+  stack: string | undefined,
+  className: string | undefined
+): ReactNode {
+  if (!stack) return null;
+  return (
+    <panda.pre className={className}>
+      <panda.code>{stack}</panda.code>
+    </panda.pre>
+  );
+}
+
+export function ErrorBoundaryView(props: ErrorBoundaryViewProps) {
+  const locale = props.locale ?? DEFAULT_LOCALE;
+  const info = resolveErrorInfo(props.error, locale, props.isDev);
+  const boundaryBadge = `[${props.boundary}]`;
   const styles = errorBoundaryRecipe();
 
   return (
     <panda.section
       role="alert"
       aria-label={resolveA11yString(locale, 'errorBoundaryLabel')}
-      data-error-boundary={boundary}
+      data-error-boundary={props.boundary}
       data-error-status={String(info.status)}
       className={styles.root}
     >
       <Container>
-        <Box className={styles.card}>
+        <Box className={surfaceCard({ size: 'md' })}>
           <Box className={styles.text}>{boundaryBadge}</Box>
           <panda.h1 className={styles.text}>{info.message}</panda.h1>
           <Box className={styles.text}>{info.details}</Box>
-          {isDev && info.stack ? (
-            <panda.pre className={styles.stackTrace}>
-              <panda.code>{info.stack}</panda.code>
-            </panda.pre>
-          ) : null}
+          {renderStackTrace(info.stack, styles.stackTrace)}
         </Box>
       </Container>
     </panda.section>
@@ -159,7 +153,7 @@ export function StrategicSectionBoundary({
   locale = DEFAULT_LOCALE,
   children,
 }: StrategicSectionBoundaryProps) {
-  if (error !== undefined && error !== null) {
+  if (error != null) {
     return (
       <ErrorBoundaryView error={error} boundary={boundary} locale={locale} />
     );

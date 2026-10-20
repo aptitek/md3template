@@ -54,7 +54,7 @@ jobs:
           git fetch origin ${{ github.base_ref }} --depth=1
           node -e '
             import("node:child_process").then(async ({ execSync }) => {
-              const { checkConfigLockStaged } = await import("./scripts/verify-config-lock.mjs");
+              const { checkConfigLockStaged } = await import("./scripts/verify-config-lock.ts");
               const diff = execSync("git diff --name-only origin/${{ github.base_ref }}...HEAD", { encoding: "utf-8" });
               const files = diff.split("\n").filter(Boolean);
               const res = checkConfigLockStaged(files, {});

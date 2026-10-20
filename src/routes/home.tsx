@@ -46,7 +46,7 @@ export function HomeView({
       locale={locale}
     >
       <Flex align="center" justify="center">
-        <M3eCard variant="filled" className={surfaceCard({ size: 'lg' })}>
+        <M3eCard variant="filled" className={surfaceCard()}>
           <panda.h1 color="onSurface">{title}</panda.h1>
           <Box color="onSurface">{description}</Box>
         </M3eCard>

@@ -8,7 +8,20 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 
-const IGNORED_PATH_SEGMENTS = [
+export interface SecretRule {
+  readonly id: string;
+  readonly description: string;
+  readonly pattern: RegExp;
+}
+
+export interface SecretFinding {
+  readonly file: string;
+  readonly line: number;
+  readonly ruleId: string;
+  readonly description: string;
+}
+
+const IGNORED_PATH_SEGMENTS: readonly string[] = [
   'node_modules/',
   '.git/',
   'dist/',
@@ -29,10 +42,7 @@ const IGNORED_PATH_SEGMENTS = [
 const SCANNED_EXTENSIONS =
   /\.(ts|tsx|js|jsx|mjs|cjs|json|jsonc|yml|yaml|toml|md|mdx|sql|css|env|sh)$/;
 
-/**
- * High-precision secret signature rules for secret-scanner
- */
-export const SECRET_RULES = [
+export const SECRET_RULES: readonly SecretRule[] = [
   {
     id: 'private-key',
     description: 'Cryptographic Private Key block',
@@ -88,7 +98,7 @@ export const SECRET_RULES = [
   },
 ];
 
-export function shouldIgnoreFile(filePath) {
+export function shouldIgnoreFile(filePath: string): boolean {
   const normalized = filePath.replace(/\\/g, '/');
   if (IGNORED_PATH_SEGMENTS.some((seg) => normalized.includes(seg))) {
     return true;
@@ -100,13 +110,11 @@ export function shouldIgnoreFile(filePath) {
   return !SCANNED_EXTENSIONS.test(normalized);
 }
 
-/**
- * Scans a string of file content for hardcoded secrets.
- * @param {string} content
- * @param {string} [filePath]
- */
-export function scanContentForSecrets(content, filePath = 'inline') {
-  const findings = [];
+export function scanContentForSecrets(
+  content: string,
+  filePath = 'inline'
+): SecretFinding[] {
+  const findings: SecretFinding[] = [];
   const lines = content.split(/\r?\n/);
 
   for (let idx = 0; idx < lines.length; idx++) {
@@ -128,7 +136,7 @@ export function scanContentForSecrets(content, filePath = 'inline') {
   return findings;
 }
 
-const WORKSPACE_SCAN_DIRS = [
+const WORKSPACE_SCAN_DIRS: readonly string[] = [
   'src',
   'tests',
   'scripts',
@@ -137,41 +145,51 @@ const WORKSPACE_SCAN_DIRS = [
   'drizzle',
 ];
 
-export function collectWorkspaceFiles(rootDir = process.cwd()) {
-  const collected = [];
-
-  for (const entry of readdirSync(rootDir, { withFileTypes: true })) {
-    if (entry.isFile()) {
-      const fullPath = join(rootDir, entry.name);
-      if (!shouldIgnoreFile(entry.name)) {
+function collectSubdirFiles(
+  rootDir: string,
+  subDir: string,
+  collected: string[]
+): void {
+  const absSubDir = join(rootDir, subDir);
+  if (!existsSync(absSubDir)) return;
+  for (const relEntry of readdirSync(absSubDir, { recursive: true })) {
+    if (typeof relEntry !== 'string') continue;
+    const fullPath = join(absSubDir, relEntry);
+    const relFromRoot = relative(rootDir, fullPath);
+    if (shouldIgnoreFile(relFromRoot)) continue;
+    try {
+      if (statSync(fullPath).isFile()) {
         collected.push(fullPath);
       }
+    } catch {
+      // Ignore transient files
+    }
+  }
+}
+
+export function collectWorkspaceFiles(
+  rootDir: string = process.cwd()
+): string[] {
+  const collected: string[] = [];
+
+  for (const entry of readdirSync(rootDir, { withFileTypes: true })) {
+    if (entry.isFile() && !shouldIgnoreFile(entry.name)) {
+      collected.push(join(rootDir, entry.name));
     }
   }
 
   for (const subDir of WORKSPACE_SCAN_DIRS) {
-    const absSubDir = join(rootDir, subDir);
-    if (!existsSync(absSubDir)) continue;
-    for (const relEntry of readdirSync(absSubDir, { recursive: true })) {
-      if (typeof relEntry !== 'string') continue;
-      const fullPath = join(absSubDir, relEntry);
-      const relFromRoot = relative(rootDir, fullPath);
-      if (shouldIgnoreFile(relFromRoot)) continue;
-      try {
-        if (statSync(fullPath).isFile()) {
-          collected.push(fullPath);
-        }
-      } catch {
-        // Ignore transient files
-      }
-    }
+    collectSubdirFiles(rootDir, subDir, collected);
   }
 
   return collected;
 }
 
-export function scanFilesForSecrets(files, rootDir = process.cwd()) {
-  const allFindings = [];
+export function scanFilesForSecrets(
+  files: readonly string[],
+  rootDir: string = process.cwd()
+): SecretFinding[] {
+  const allFindings: SecretFinding[] = [];
   for (const file of files) {
     const absPath = resolve(rootDir, file);
     if (!existsSync(absPath)) continue;
@@ -185,33 +203,27 @@ export function scanFilesForSecrets(files, rootDir = process.cwd()) {
   return allFindings;
 }
 
-function runSecretlintCli(targetArgs) {
-  const args =
-    targetArgs.length > 0
-      ? [
-          'exec',
-          'secretlint',
-          '--secretlintrc',
-          '.secretlintrc.json',
-          ...targetArgs,
-        ]
-      : [
-          'exec',
-          'secretlint',
-          '--secretlintrc',
-          '.secretlintrc.json',
-          'src/**/*',
-          'tests/**/*',
-          'scripts/**/*',
-          '.storybook/**/*',
-          '.github/**/*',
-        ];
-
+function runSecretlintCli(targetArgs: readonly string[]): boolean {
+  const defaultGlobs = [
+    'src/**/*',
+    'tests/**/*',
+    'scripts/**/*',
+    '.storybook/**/*',
+    '.github/**/*',
+  ];
+  const targets = targetArgs.length > 0 ? targetArgs : defaultGlobs;
+  const args = [
+    'exec',
+    'secretlint',
+    '--secretlintrc',
+    '.secretlintrc.json',
+    ...targets,
+  ];
   const result = spawnSync('pnpm', args, { stdio: 'inherit' });
   return result.status === 0;
 }
 
-function runCli() {
+function runCli(): void {
   const cliFiles = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
   const filesToScan =
     cliFiles.length > 0 ? cliFiles : collectWorkspaceFiles(process.cwd());
@@ -232,12 +244,12 @@ function runCli() {
   const secretlintTargets = cliFiles.filter(
     (f) => !shouldIgnoreFile(relative(process.cwd(), resolve(f)))
   );
-  if (cliFiles.length === 0 || secretlintTargets.length > 0) {
-    const secretlintOk = runSecretlintCli(secretlintTargets);
-    if (!secretlintOk) {
-      console.error('❌ [Secret Scanner] secretlint detected exposed secrets.');
-      process.exit(1);
-    }
+  if (
+    (cliFiles.length === 0 || secretlintTargets.length > 0) &&
+    !runSecretlintCli(secretlintTargets)
+  ) {
+    console.error('❌ [Secret Scanner] secretlint detected exposed secrets.');
+    process.exit(1);
   }
 
   console.log(

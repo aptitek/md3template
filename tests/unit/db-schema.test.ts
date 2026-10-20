@@ -4,7 +4,7 @@ import {
   findMigrationSqlFiles,
   hasCloudflareRemoteAuth,
   isValidD1DatabaseId,
-} from '../../scripts/db-migrate.mjs';
+} from '../../scripts/db-migrate.ts';
 import { appMetadata } from '../../src/db/schema.ts';
 
 describe('Database Schema & Migration Gate', () => {

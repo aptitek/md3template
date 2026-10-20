@@ -30,6 +30,7 @@ describe('Home Route Module & Strategic Boundaries', () => {
     );
     expect(viewHtml).toContain('Custom Title');
     expect(viewHtml).toContain('m3e-card');
+    expect(viewHtml).toContain('md3-surface-card--size_lg');
     expect(viewHtml).toContain('data-boundary-scope="section:home-hero"');
 
     const sectionErrHtml = renderToStaticMarkup(

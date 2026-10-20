@@ -5,13 +5,13 @@ import {
   checkUnpinnedDependencies,
   checkUnpinnedInManifest,
   findDeprecatedInLockfile,
-} from '../../scripts/lint-deprecated-deps.mjs';
+} from '../../scripts/lint-deprecated-deps.ts';
 import {
   collectWorkspaceFiles,
   scanContentForSecrets,
   scanFilesForSecrets,
-} from '../../scripts/lint-secrets.mjs';
-import { hasSnykAuth } from '../../scripts/lint-security.mjs';
+} from '../../scripts/lint-secrets.ts';
+import { hasSnykAuth } from '../../scripts/lint-security.ts';
 
 describe('Deprecated & Unpinned Dependency Gate', () => {
   it('detects deprecated packages inside lockfile content', () => {

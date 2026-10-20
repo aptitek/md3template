@@ -14,15 +14,16 @@ import security from 'eslint-plugin-security';
 import storybook from 'eslint-plugin-storybook';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
-import { createA11yConfig } from './scripts/eslint/a11y-config.js';
-import { cssTokensPlugin } from './scripts/eslint/css-tokens-plugin.js';
-import { m3TokensPlugin } from './scripts/eslint/m3-tokens-plugin.js';
-import { pandaRecipesPlugin } from './scripts/eslint/panda-recipes-plugin.js';
-import { reactRouterNestedPlugin } from './scripts/eslint/react-router-nested-plugin.js';
+import { createA11yConfig } from './scripts/eslint/a11y-config.ts';
+import { cssTokensPlugin } from './scripts/eslint/css-tokens-plugin.ts';
+import { m3TokensPlugin } from './scripts/eslint/m3-tokens-plugin.ts';
+import { pandaRecipesPlugin } from './scripts/eslint/panda-recipes-plugin.ts';
+import { reactRouterNestedPlugin } from './scripts/eslint/react-router-nested-plugin.ts';
 import {
   restrictedImportsRule,
   restrictedSyntaxRules,
-} from './scripts/eslint/restricted-rules.js';
+  tsxStrictI18nSyntaxRules,
+} from './scripts/eslint/restricted-rules.ts';
 
 const pandaRecommended = await panda.configs.recommended();
 
@@ -35,6 +36,8 @@ export default defineConfig([
     '.react-router',
     '.agents',
     'coverage',
+    'reports',
+    '.stryker-tmp',
     'test-results',
     'playwright-report',
     '.wireit',
@@ -138,8 +141,21 @@ export default defineConfig([
       ],
     },
     rules: {
+      complexity: ['error', 3],
+      'max-depth': ['error', 1],
+      'max-lines': [
+        'error',
+        { max: 150, skipBlankLines: true, skipComments: true },
+      ],
+      'max-lines-per-function': [
+        'error',
+        { max: 28, skipBlankLines: true, skipComments: true },
+      ],
+      'no-else-return': ['error', { allowElseIf: false }],
+      'prefer-const': 'error',
       'no-restricted-syntax': ['error', ...restrictedSyntaxRules],
       'm3-tokens/no-hardcoded-colors': 'error',
+      'm3-tokens/enforce-color-pairing': 'error',
       'm3-tokens/enforce-motion-tokens': 'error',
       'm3-tokens/enforce-shape-tokens': 'error',
       'm3-tokens/enforce-typography-tokens': 'error',
@@ -239,7 +255,6 @@ export default defineConfig([
                     type: [
                       'tokens',
                       'theme',
-                      'i18n',
                       'types',
                       'atoms',
                       'molecules',
@@ -261,8 +276,6 @@ export default defineConfig([
                       'i18n',
                       'types',
                       'db',
-                      'atoms',
-                      'molecules',
                       'organisms',
                       'components',
                       'templates',
@@ -303,6 +316,77 @@ export default defineConfig([
     },
   },
   {
+    files: ['src/**/*.tsx'],
+    ignores: ['**/*.stories.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...restrictedSyntaxRules,
+        ...tsxStrictI18nSyntaxRules,
+        {
+          selector: ':matches(ThrowStatement, TryStatement)',
+          message:
+            'Partial functions (`throw` / `try..catch`) are forbidden in pure UI/route modules. Return an explicit `Result<T, E>` discriminated union instead (IO try/catch is restricted to `src/worker.ts`).',
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/**/*.ts'],
+    ignores: ['src/worker.ts', '**/*.stories.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...restrictedSyntaxRules,
+        {
+          selector: ':matches(ThrowStatement, TryStatement)',
+          message:
+            'Partial functions (`throw` / `try..catch`) are forbidden in pure domain modules. Return an explicit `Result<T, E>` discriminated union instead (IO try/catch is restricted to `src/worker.ts`).',
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/components/atoms/**/*.{ts,tsx}'],
+    ignores: ['**/*.stories.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...restrictedSyntaxRules,
+        ...tsxStrictI18nSyntaxRules,
+        {
+          selector: ':matches(ThrowStatement, TryStatement)',
+          message:
+            'Partial functions (`throw` / `try..catch`) are forbidden in pure UI/route modules. Return an explicit `Result<T, E>` discriminated union instead (IO try/catch is restricted to `src/worker.ts`).',
+        },
+        {
+          selector:
+            'ImportSpecifier[imported.name=/^use[A-Z]/], CallExpression[callee.name=/^use[A-Z]/]',
+          message:
+            'Atoms must be 100% stateless pure functions. React hooks (`useState`, `useReducer`, `useContext`, `useEffect`, etc.) are forbidden in `src/components/atoms/`.',
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/components/organisms/**/*.{ts,tsx}'],
+    ignores: ['**/*.stories.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'react-router',
+              message:
+                'Organisms must not import `react-router` directly. Inject navigation and actions via props or slots.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: [
       'src/root.tsx',
       'src/routes/**/*.{ts,tsx}',
@@ -315,6 +399,10 @@ export default defineConfig([
   {
     files: ['src/tokens/**/*.{ts,tsx}', 'src/theme/**/*.{ts,tsx}'],
     rules: {
+      'max-lines': [
+        'error',
+        { max: 256, skipBlankLines: true, skipComments: true },
+      ],
       'm3-tokens/no-hardcoded-colors': 'off',
       'm3-tokens/enforce-motion-tokens': 'off',
       'm3-tokens/enforce-shape-tokens': 'off',
@@ -391,6 +479,8 @@ export default defineConfig([
     files: ['**/*.stories.{ts,tsx}', 'tests/**/*.{ts,tsx}'],
     rules: {
       'i18next/no-literal-string': 'off',
+      complexity: ['error', 8],
+      'max-depth': ['error', 3],
       'max-lines': 'off',
       'max-lines-per-function': 'off',
       'security/detect-non-literal-fs-filename': 'off',
@@ -413,6 +503,45 @@ export default defineConfig([
           message:
             'Test block lacks any expect() assertion. Coverage-gaming tests without assertions are strictly prohibited.',
         },
+        {
+          selector:
+            'CallExpression > MemberExpression[property.name=/^(toBeTruthy|toBeFalsy|toBeDefined|toMatchSnapshot|toMatchInlineSnapshot)$/]',
+          message:
+            'Weak or tautological test assertion (`.toBeTruthy()`, `.toBeFalsy()`, `.toBeDefined()`, `.toMatchSnapshot()`) is forbidden. Assert exact values or concrete DOM/ARIA attributes (`.toBe()`, `.toEqual()`, `.toStrictEqual()`, `.toContain()`, `.toHaveLength()`).',
+        },
+        {
+          selector:
+            'CallExpression[callee.object.name=/^(vi|jest)$/][callee.property.name="mock"]',
+          message:
+            'Mocking modules via `vi.mock()` is forbidden. Test real module implementations or inject dependencies explicitly via function parameters.',
+        },
+      ],
+    },
+  },
+  {
+    files: ['scripts/**/*.{js,jsx,mjs,cjs}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Program',
+          message:
+            'Untyped JavaScript files (.js, .mjs, .cjs) are strictly forbidden in scripts/. Write all guardian scripts and ESLint plugins in strict TypeScript (.ts).',
+        },
+      ],
+    },
+  },
+  {
+    files: ['scripts/**/*.{ts,tsx}'],
+    rules: {
+      'security/detect-non-literal-fs-filename': 'off',
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ExportAllDeclaration',
+          message:
+            'Wildcard barrel exports (`export * from ...`) are forbidden in scripts/. Use explicit named exports.',
+        },
       ],
     },
   },
@@ -420,6 +549,7 @@ export default defineConfig([
     files: [
       'src/**/*.{ts,tsx,js,jsx,mjs,cjs}',
       'tests/**/*.{ts,tsx,js,jsx,mjs,cjs}',
+      'scripts/**/*.{ts,tsx,js,jsx,mjs,cjs}',
     ],
     plugins: {
       '@eslint-community/eslint-comments': eslintComments,

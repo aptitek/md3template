@@ -14,10 +14,10 @@ import { join, resolve } from 'node:path';
 const DB_NAME = 'md3template-db';
 
 export function findMigrationSqlFiles(
-  migrationsDir = resolve('drizzle/migrations')
-) {
+  migrationsDir: string = resolve('drizzle/migrations')
+): string[] {
   if (!existsSync(migrationsDir)) return [];
-  const sqlFiles = [];
+  const sqlFiles: string[] = [];
   for (const entry of readdirSync(migrationsDir)) {
     const full = join(migrationsDir, entry);
     if (statSync(full).isDirectory()) {
@@ -32,19 +32,15 @@ export function findMigrationSqlFiles(
   return sqlFiles;
 }
 
-/**
- * @param {Record<string, string | undefined>} [env]
- */
-export function hasCloudflareRemoteAuth(env = process.env) {
+export function hasCloudflareRemoteAuth(
+  env: Readonly<Record<string, string | undefined>> = process.env
+): boolean {
   return Boolean(
     env.CLOUDFLARE_API_TOKEN && env.CLOUDFLARE_API_TOKEN.trim().length > 0
   );
 }
 
-/**
- * @param {string} databaseId
- */
-export function isValidD1DatabaseId(databaseId) {
+export function isValidD1DatabaseId(databaseId: string): boolean {
   const trimmed = String(databaseId ?? '').trim();
   if (!trimmed || /^0+-0+-0+-0+-0+$/.test(trimmed)) {
     return false;
@@ -54,7 +50,7 @@ export function isValidD1DatabaseId(databaseId) {
   );
 }
 
-function runCommand(cmd, args) {
+function runCommand(cmd: string, args: readonly string[]): boolean {
   const res = spawnSync(cmd, args, {
     stdio: 'inherit',
     env: { ...process.env, CI: 'true' },
@@ -62,7 +58,30 @@ function runCommand(cmd, args) {
   return res.status === 0;
 }
 
-function runCli() {
+function applyWranglerMigrations(
+  mode: '--local' | '--remote',
+  sqlCount: number
+): void {
+  const label = mode === '--remote' ? 'remote' : 'local';
+  const ok = runCommand('pnpm', [
+    'exec',
+    'wrangler',
+    'd1',
+    'migrations',
+    'apply',
+    DB_NAME,
+    mode,
+  ]);
+  if (!ok) {
+    console.error(`❌ [DB Migration] ${label} D1 migration failed.`);
+    process.exit(1);
+  }
+  console.log(
+    `✅ Verified and applied ${sqlCount} migration(s) to ${label} D1 (${DB_NAME}).`
+  );
+}
+
+function runCli(): void {
   const isRemote = process.argv.includes('--remote');
   const sqlFiles = findMigrationSqlFiles();
 
@@ -78,51 +97,14 @@ function runCli() {
     process.exit(1);
   }
 
-  if (isRemote) {
-    if (!hasCloudflareRemoteAuth()) {
-      console.log(
-        'ℹ️ Remote D1 migration skipped: CLOUDFLARE_API_TOKEN is not configured.'
-      );
-      return;
-    }
-    if (
-      !runCommand('pnpm', [
-        'exec',
-        'wrangler',
-        'd1',
-        'migrations',
-        'apply',
-        DB_NAME,
-        '--remote',
-      ])
-    ) {
-      console.error('❌ [DB Migration] Remote D1 migration failed.');
-      process.exit(1);
-    }
+  if (isRemote && !hasCloudflareRemoteAuth()) {
     console.log(
-      `✅ Applied ${sqlFiles.length} migration(s) to remote D1 (${DB_NAME}).`
+      'ℹ️ Remote D1 migration skipped: CLOUDFLARE_API_TOKEN is not configured.'
     );
     return;
   }
 
-  if (
-    !runCommand('pnpm', [
-      'exec',
-      'wrangler',
-      'd1',
-      'migrations',
-      'apply',
-      DB_NAME,
-      '--local',
-    ])
-  ) {
-    console.error('❌ [DB Migration] Local D1 migration failed.');
-    process.exit(1);
-  }
-
-  console.log(
-    `✅ Verified and applied ${sqlFiles.length} migration(s) to local D1 (${DB_NAME}).`
-  );
+  applyWranglerMigrations(isRemote ? '--remote' : '--local', sqlFiles.length);
 }
 
 if (

@@ -4,6 +4,10 @@ export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
 export const DEFAULT_LOCALE: Locale = 'en';
 
-export function isSupportedLocale(value: string): value is Locale {
-  return (SUPPORTED_LOCALES as readonly string[]).includes(value);
+export function isSupportedLocale(value: string): boolean {
+  return value === 'en' || value === 'fr';
+}
+
+export function resolveLocale(value: string): Locale {
+  return value === 'fr' ? 'fr' : DEFAULT_LOCALE;
 }

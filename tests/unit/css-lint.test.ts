@@ -1,9 +1,21 @@
 import { ESLint } from 'eslint';
 import { describe, expect, it } from 'vitest';
+import { cssTokensPlugin } from '../../scripts/eslint/css-tokens-plugin.ts';
 
 const eslint = new ESLint({ overrideConfigFile: 'eslint.config.js' });
 
 describe('CSS Component Overrides', () => {
+  it('exports all 7 CSS token enforcement rules in cssTokensPlugin', () => {
+    expect(Object.keys(cssTokensPlugin.rules ?? {})).toEqual([
+      'no-unscoped-component-override',
+      'no-scoped-important',
+      'no-raw-colors',
+      'no-unperformant-transitions',
+      'no-raw-font-family',
+      'no-tailwind-directives',
+      'enforce-theme',
+    ]);
+  });
   it('rejects direct unscoped overrides of native MD3 components', async () => {
     const code = `
 m3e-button {

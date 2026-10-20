@@ -8,21 +8,32 @@
 
 import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import { getCandidateCompanions } from './lint-tdd-companions.mjs';
+import { getCandidateCompanions } from './lint-tdd-companions.ts';
 
-const SRC_IMPLEMENTATION_REGEX = /^src\/.*\.(ts|tsx|js|jsx)(?<!\.d\.ts)$/;
+export interface TddStagedResult {
+  readonly pass: boolean;
+  readonly stagedSrcFiles: string[];
+  readonly stagedTestFiles: string[];
+  readonly untestedSrcFiles: string[];
+}
+
+const SRC_IMPLEMENTATION_REGEX =
+  /^(src|scripts)\/.*\.(ts|tsx|js|jsx)(?<!\.d\.ts)$/;
 const IGNORED_SRC_REGEX =
   /^src\/(types\/|content\/)|(\.(test|spec|stories)\.(ts|tsx|js|jsx)$)/;
 const TEST_FILE_REGEX = /(^tests\/|\.(test|spec)\.(ts|tsx|js|jsx)$)/;
 
-export function checkTddStaged(stagedFiles) {
+export function checkTddStaged(
+  stagedFiles: readonly string[]
+): TddStagedResult {
   const normalizedStaged = stagedFiles.map((f) =>
     f.replaceAll('\\', '/').replace(/^\.\//, '')
   );
 
-  const stagedSrcFiles = normalizedStaged.filter((file) => {
-    return SRC_IMPLEMENTATION_REGEX.test(file) && !IGNORED_SRC_REGEX.test(file);
-  });
+  const stagedSrcFiles = normalizedStaged.filter(
+    (file) =>
+      SRC_IMPLEMENTATION_REGEX.test(file) && !IGNORED_SRC_REGEX.test(file)
+  );
 
   if (stagedSrcFiles.length === 0) {
     return {
@@ -48,19 +59,22 @@ export function checkTddStaged(stagedFiles) {
   return { pass, stagedSrcFiles, stagedTestFiles, untestedSrcFiles };
 }
 
-export function getGitStagedFiles() {
+export function getGitStagedFiles(diffFilter = 'ACMRD'): string[] {
   try {
-    const output = execSync('git diff --cached --name-only', {
-      encoding: 'utf-8',
-    });
+    const output = execSync(
+      `git diff --cached --name-only --diff-filter=${diffFilter}`,
+      {
+        encoding: 'utf-8',
+      }
+    );
     return output.trim().split('\n').filter(Boolean);
   } catch {
     return [];
   }
 }
 
-function runCli() {
-  const staged = getGitStagedFiles();
+function runCli(): void {
+  const staged = getGitStagedFiles('ACMR');
   const { pass, untestedSrcFiles } = checkTddStaged(staged);
 
   if (!pass) {

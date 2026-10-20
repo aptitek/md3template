@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { token } from 'styled-system/tokens';
 import pandaConfig from '../../panda.config.ts';
+import { m3TokensPlugin } from '../../scripts/eslint/m3-tokens-plugin.ts';
 import {
   md3Breakpoints,
   md3Recipes,
@@ -10,6 +11,15 @@ import {
 } from '../../src/tokens/md3.ts';
 
 describe('MD3 Design Tokens & Recipes', () => {
+  it('exports all 5 MD3 token and color pairing rules in m3TokensPlugin', () => {
+    expect(Object.keys(m3TokensPlugin.rules ?? {})).toEqual([
+      'no-hardcoded-colors',
+      'enforce-color-pairing',
+      'enforce-motion-tokens',
+      'enforce-shape-tokens',
+      'enforce-typography-tokens',
+    ]);
+  });
   it('defines standard MD3 radii, spacing, durations, breakpoints, and easings synchronized with theme.css', () => {
     const themeCss = readFileSync('src/theme/theme.css', 'utf-8');
     expect(md3Tokens.radii.small.value).toBe('8px');

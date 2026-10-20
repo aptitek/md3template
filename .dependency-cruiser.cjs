@@ -131,10 +131,10 @@ module.exports = {
       name: 'atomic-molecules-hierarchy',
       severity: 'error',
       comment:
-        'Molecules must not import from organisms, templates, pages, or routes.',
+        'Molecules must not import from organisms, templates, pages, routes, or db.',
       from: { path: '^src/components/molecules/' },
       to: {
-        path: '^src/(?:components/(?:organisms|templates|pages)/|routes/)',
+        path: '^src/(?:components/(?:organisms|templates|pages)/|routes/|db/)',
       },
     },
     {
@@ -149,11 +149,30 @@ module.exports = {
     {
       name: 'atomic-templates-hierarchy',
       severity: 'error',
-      comment: 'Templates must not import from pages or routes.',
+      comment:
+        'Templates must not import from pages, routes, i18n, or db (pure spatial slots only).',
       from: { path: '^src/components/templates/' },
       to: {
-        path: '^src/(?:components/pages/|routes/)',
+        path: '^src/(?:components/pages/|routes/|i18n/|db/)',
       },
+    },
+    {
+      name: 'routes-hierarchy',
+      severity: 'error',
+      comment:
+        'Routes must orchestrate templates/organisms and must not directly import atoms or molecules.',
+      from: { path: '^src/routes/' },
+      to: {
+        path: '^src/components/(?:atoms|molecules)/',
+      },
+    },
+    {
+      name: 'scripts-independence',
+      severity: 'error',
+      comment:
+        'Guardian scripts and ESLint plugins must not import runtime application code from src/ or tests/.',
+      from: { path: '^scripts/' },
+      to: { path: '^(?:src/(?!types/)|tests/)' },
     },
   ],
   options: {

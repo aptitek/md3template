@@ -7,6 +7,8 @@
     "panda.config.ts",
     "drizzle.config.ts",
     "src/tokens/md3.ts",
+    "src/types/**/*.d.ts",
+    "scripts/**/*",
     ".storybook/**/*"
   ],
   "compilerOptions": {

@@ -43,12 +43,13 @@
     "test:unit": "wireit",
     "test:stories": "wireit",
     "test:coverage": "wireit",
+    "test:mutation": "wireit",
     "test:tdd": "vitest --project=unit --watch",
     "test:e2e": "wireit",
     "db:generate": "drizzle-kit generate",
     "db:check": "wireit",
     "db:migrate": "wireit",
-    "db:migrate:prod": "node scripts/db-migrate.mjs --remote",
+    "db:migrate:prod": "node scripts/db-migrate.ts --remote",
     "format": "prettier --write --cache --cache-location node_modules/.cache/prettier/.prettiercache --cache-strategy metadata .",
     "format:check": "prettier --check --cache --cache-location node_modules/.cache/prettier/.prettiercache --cache-strategy metadata .",
     "clean": "wireit",
@@ -188,13 +189,14 @@
       "output": []
     },
     "lint:depcruise": {
-      "command": "depcruise src --config .dependency-cruiser.cjs --cache node_modules/.cache/dependency-cruiser --cache-strategy content",
+      "command": "depcruise src scripts --config .dependency-cruiser.cjs --cache node_modules/.cache/dependency-cruiser --cache-strategy content",
       "dependencies": [
         "codegen:panda",
         "codegen:types"
       ],
       "files": [
         "src/**/*",
+        "scripts/**/*",
         ".dependency-cruiser.cjs",
         "tsconfig.cloudflare.json",
         "package.json"
@@ -202,28 +204,28 @@
       "output": []
     },
     "lint:deprecated": {
-      "command": "node scripts/lint-deprecated-deps.mjs",
+      "command": "node scripts/lint-deprecated-deps.ts",
       "files": [
         "package.json",
         "pnpm-lock.yaml",
         "pnpm-workspace.yaml",
-        "scripts/lint-deprecated-deps.mjs"
+        "scripts/lint-deprecated-deps.ts"
       ],
       "output": []
     },
     "lint:security": {
-      "command": "node scripts/lint-security.mjs",
+      "command": "node scripts/lint-security.ts",
       "files": [
         "package.json",
         "pnpm-lock.yaml",
         "pnpm-workspace.yaml",
         ".snyk",
-        "scripts/lint-security.mjs"
+        "scripts/lint-security.ts"
       ],
       "output": []
     },
     "lint:secrets": {
-      "command": "node scripts/lint-secrets.mjs",
+      "command": "node scripts/lint-secrets.ts",
       "files": [
         "src/**/*",
         "tests/**/*",
@@ -254,6 +256,7 @@
       "files": [
         "src/**/*",
         "tests/**/*",
+        "scripts/**/*",
         "tsconfig.json",
         "tsconfig.cloudflare.json",
         "tsconfig.node.json",
@@ -262,19 +265,19 @@
       "output": []
     },
     "lint:markdown": {
-      "command": "remark --frail README.md && node scripts/lint-markdown-structure.mjs",
+      "command": "remark --frail README.md && node scripts/lint-markdown-structure.ts",
       "files": [
         "**/*.md",
         ".remarkrc.mjs",
-        "scripts/lint-markdown-structure.mjs"
+        "scripts/lint-markdown-structure.ts"
       ],
       "output": []
     },
     "lint:mdx": {
-      "command": "node scripts/lint-mdx-purity.mjs",
+      "command": "node scripts/lint-mdx-purity.ts",
       "files": [
         "**/*.mdx",
-        "scripts/lint-mdx-purity.mjs"
+        "scripts/lint-mdx-purity.ts"
       ],
       "output": []
     },
@@ -287,36 +290,39 @@
       "output": []
     },
     "lint:tdd": {
-      "command": "node scripts/lint-tdd-companions.mjs",
+      "command": "node scripts/lint-tdd-companions.ts",
       "files": [
         "src/**/*",
         "tests/**/*",
-        "scripts/lint-tdd-companions.mjs"
+        "scripts/**/*"
       ],
       "output": []
     },
     "lint:storybook": {
-      "command": "node scripts/lint-storybook-coverage.mjs",
+      "command": "node scripts/lint-storybook-coverage.ts",
       "files": [
         "src/**/*.tsx",
-        "scripts/lint-storybook-coverage.mjs"
+        "scripts/lint-storybook-coverage.ts",
+        "scripts/ts-ast-helpers.ts"
       ],
       "output": []
     },
     "lint:boundaries": {
-      "command": "node scripts/lint-error-boundaries.mjs",
+      "command": "node scripts/lint-error-boundaries.ts",
       "files": [
         "src/**/*",
-        "scripts/lint-error-boundaries.mjs"
+        "scripts/lint-error-boundaries.ts"
       ],
       "output": []
     },
     "lint:routes": {
-      "command": "node scripts/lint-routes.mjs",
+      "command": "node scripts/lint-routes.ts",
       "files": [
         "src/routes.ts",
         "src/routes/**/*",
-        "scripts/lint-routes.mjs"
+        "scripts/lint-routes.ts",
+        "scripts/route-ast-helpers.ts",
+        "scripts/ts-ast-helpers.ts"
       ],
       "output": []
     },
@@ -338,6 +344,7 @@
     "test": {
       "dependencies": [
         "test:coverage",
+        "test:mutation",
         "test:stories",
         "test:e2e"
       ]
@@ -351,7 +358,7 @@
       "files": [
         "src/**/*.{ts,tsx,js,jsx}",
         "tests/unit/**/*.{ts,tsx,js,jsx}",
-        "scripts/**/*.{js,mjs}",
+        "scripts/**/*.ts",
         "vite.config.ts",
         "tsconfig.json",
         "package.json"
@@ -367,13 +374,32 @@
       "files": [
         "src/**/*.{ts,tsx,js,jsx}",
         "tests/unit/**/*.{ts,tsx,js,jsx}",
-        "scripts/**/*.{js,mjs}",
+        "scripts/**/*.ts",
         "vite.config.ts",
         "tsconfig.json",
         "package.json"
       ],
       "output": [
         "coverage/**"
+      ]
+    },
+    "test:mutation": {
+      "command": "stryker run",
+      "dependencies": [
+        "codegen:panda",
+        "codegen:types",
+        "test:coverage"
+      ],
+      "files": [
+        "src/**/*.{ts,tsx}",
+        "tests/unit/**/*.{ts,tsx}",
+        "stryker.config.mjs",
+        "vite.config.ts",
+        "tsconfig.json",
+        "package.json"
+      ],
+      "output": [
+        "reports/mutation/**"
       ]
     },
     "test:stories": {
@@ -415,19 +441,19 @@
       "output": []
     },
     "db:migrate": {
-      "command": "node scripts/db-migrate.mjs",
+      "command": "node scripts/db-migrate.ts",
       "files": [
         "src/db/**/*",
         "drizzle/**/*",
         "drizzle.config.ts",
         "wrangler.jsonc",
-        "scripts/db-migrate.mjs",
+        "scripts/db-migrate.ts",
         "package.json"
       ],
       "output": []
     },
     "clean": {
-      "command": "rm -rf dist build .react-router storybook-static coverage test-results playwright-report .wireit node_modules/.cache styled-system"
+      "command": "rm -rf dist build .react-router storybook-static coverage reports .stryker-tmp test-results playwright-report .wireit node_modules/.cache styled-system"
     }
   },
   "dependencies": {
@@ -466,6 +492,8 @@
     "@storybook/addon-mcp": "^10.6.2",
     "@storybook/addon-vitest": "^10.6.2",
     "@storybook/react-vite": "^10.6.2",
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
     "@types/node": "^26.6.5",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",

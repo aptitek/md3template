@@ -1,42 +1,48 @@
 #!/usr/bin/env node
 /**
  * Git Pre-Commit Configuration & Linter Lock Hook
- * Blocks modifications to scripts/, eslint.config.js, .dependency-cruiser.cjs,
- * or knip.json without explicit validation (ALLOW_CONFIG_EDIT=1).
+ * Blocks modifications to scripts/, eslint.config.js, commitlint.config.mjs,
+ * .dependency-cruiser.cjs, or knip.json without explicit validation (ALLOW_CONFIG_EDIT=1).
  */
 
 import { resolve } from 'node:path';
-import { getGitStagedFiles } from './verify-tdd-staged.mjs';
+import { getGitStagedFiles } from './verify-tdd-staged.ts';
 
-const LOCKED_FILE_PATTERNS = [
+export interface ConfigLockResult {
+  readonly pass: boolean;
+  readonly lockedStagedFiles: string[];
+  readonly approved: boolean;
+}
+
+const LOCKED_FILE_PATTERNS: readonly RegExp[] = [
   /^scripts\//,
   /^\.husky\//,
   /^\.github\//,
   /^eslint\.config\.js$/,
+  /^commitlint\.config\.mjs$/,
+  /^stryker\.config\.mjs$/,
   /^\.dependency-cruiser\.cjs$/,
   /^knip\.json$/,
   /^\.jscpd\.json$/,
   /^\.size-limit\.json$/,
 ];
 
-export function isLockedConfigFile(filePath) {
+export function isLockedConfigFile(filePath: string): boolean {
   const normalized = filePath.replaceAll('\\', '/').replace(/^\.\//, '');
   return LOCKED_FILE_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
-/**
- * @param {Record<string, string | undefined>} [env]
- */
-export function isExplicitlyApproved(env = process.env) {
+export function isExplicitlyApproved(
+  env: Readonly<Record<string, string | undefined>> = process.env
+): boolean {
   const flag = env.ALLOW_CONFIG_EDIT ?? env.UNLOCK_CONFIG ?? '';
   return flag === '1' || flag.toLowerCase() === 'true';
 }
 
-/**
- * @param {string[]} stagedFiles
- * @param {Record<string, string | undefined>} [env]
- */
-export function checkConfigLockStaged(stagedFiles, env = process.env) {
+export function checkConfigLockStaged(
+  stagedFiles: readonly string[],
+  env: Readonly<Record<string, string | undefined>> = process.env
+): ConfigLockResult {
   const lockedStagedFiles = stagedFiles.filter((file) =>
     isLockedConfigFile(file)
   );
@@ -53,7 +59,7 @@ export function checkConfigLockStaged(stagedFiles, env = process.env) {
   };
 }
 
-function runCli() {
+function runCli(): void {
   const { pass, lockedStagedFiles } =
     checkConfigLockStaged(getGitStagedFiles());
 
@@ -65,7 +71,7 @@ function runCli() {
         '🔒 [Config Lock Violation] Committed changes to locked linter/configuration files are forbidden by repository policy:',
         details,
         '',
-        'Modifying scripts/, eslint.config.js, .dependency-cruiser.cjs, or knip.json is blocked to prevent bypassing architectural guardrails.',
+        'Modifying scripts/, eslint.config.js, commitlint.config.mjs, .dependency-cruiser.cjs, or knip.json is blocked to prevent bypassing architectural guardrails.',
         '',
       ].join('\n')
     );

@@ -4,7 +4,7 @@ import {
   analyzeRoutesConfigSource,
   moduleRendersOutlet,
   validateRouteHierarchy,
-} from '../../scripts/lint-routes.mjs';
+} from '../../scripts/lint-routes.ts';
 import routesConfig from '../../src/routes.ts';
 
 describe('React Router Nested Hierarchy & Route Parsimony', () => {

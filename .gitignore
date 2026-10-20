@@ -62,6 +62,8 @@ styled-system-studio/
 # ==============================================================================
 coverage/
 .nyc_output/
+.stryker-tmp/
+reports/
 /test-results/
 /playwright-report/
 /blob-report/

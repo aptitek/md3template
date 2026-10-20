@@ -1,25 +1,24 @@
 import { createRequestHandler } from 'react-router';
 
-export function ensureSsrDomShim(
-  target: Record<string, unknown> = globalThis as Record<string, unknown>
-): void {
-  if (typeof target.HTMLElement === 'undefined') {
-    const BaseElement = class {};
-    target.Node = BaseElement;
-    target.Element = BaseElement;
-    target.HTMLElement = BaseElement;
-    target.CSSStyleSheet = class {};
-    const registry = new Map<string, unknown>();
-    target.customElements = {
-      get: (name: string) => registry.get(name),
-      define: (name: string, ctor: unknown) => {
-        registry.set(name, ctor);
-      },
-    };
-    target.document = {
-      createTreeWalker: () => ({}),
-    };
+export function ensureSsrDomShim(target: object = globalThis): void {
+  if (typeof Reflect.get(target, 'HTMLElement') !== 'undefined') {
+    return;
   }
+  const BaseElement = class {};
+  Reflect.set(target, 'Node', BaseElement);
+  Reflect.set(target, 'Element', BaseElement);
+  Reflect.set(target, 'HTMLElement', BaseElement);
+  Reflect.set(target, 'CSSStyleSheet', class {});
+  const registry = new Map<string, unknown>();
+  Reflect.set(target, 'customElements', {
+    get: (name: string) => registry.get(name),
+    define: (name: string, ctor: unknown) => {
+      registry.set(name, ctor);
+    },
+  });
+  Reflect.set(target, 'document', {
+    createTreeWalker: () => ({}),
+  });
 }
 
 ensureSsrDomShim();
@@ -37,6 +36,10 @@ export interface WorkerErrorPayload {
   readonly path: string;
 }
 
+function toWorkerErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : DEFAULT_WORKER_ERROR;
+}
+
 export async function handleFetch(
   request: Request,
   handler: (req: Request) => Promise<Response> = requestHandler
@@ -44,13 +47,10 @@ export async function handleFetch(
   try {
     return await handler(request);
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : DEFAULT_WORKER_ERROR;
-    const path = new URL(request.url).pathname;
     const payload: WorkerErrorPayload = {
       boundary: 'worker',
-      message,
-      path,
+      message: toWorkerErrorMessage(error),
+      path: new URL(request.url).pathname,
     };
 
     return new Response(JSON.stringify(payload), {

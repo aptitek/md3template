@@ -15,6 +15,8 @@ describe('AppLayout Nested Parent Route Module', () => {
     );
     expect(heroHtml).toContain('Child Outlet Content');
     expect(heroHtml).toContain('<main');
+    expect(heroHtml).toContain('aria-label="Main application content"');
+    expect(heroHtml).toContain('py_16');
 
     const compactHtml = renderToStaticMarkup(
       <AppLayoutView locale="fr" spacing="compact">
@@ -22,6 +24,10 @@ describe('AppLayout Nested Parent Route Module', () => {
       </AppLayoutView>
     );
     expect(compactHtml).toContain('Contenu Imbriqué');
+    expect(compactHtml).toContain(
+      'aria-label="Contenu principal de l’application"'
+    );
+    expect(compactHtml).toContain('py_8');
   });
 
   it('renders nested child routes via <Outlet /> in default AppLayout', () => {
@@ -44,6 +50,7 @@ describe('AppLayout Nested Parent Route Module', () => {
     const html = renderToStaticMarkup(<RouterProvider router={router} />);
     expect(html).toContain('Projected Outlet Leaf');
     expect(html).toContain('<main');
+    expect(html).toContain('py_16');
   });
 
   it('renders layout-level ErrorBoundary with route:layout attribution', () => {

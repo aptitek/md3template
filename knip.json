@@ -5,12 +5,12 @@
     "src/**/*.stories.{ts,tsx}",
     ".storybook/**/*.{ts,tsx}",
     "tests/**/*.{ts,tsx}",
-    "scripts/**/*.{js,mjs}"
+    "scripts/**/*.ts"
   ],
   "project": [
     "src/**/*.{ts,tsx,mdx}",
     "tests/**/*.{ts,tsx}",
-    "scripts/**/*.{js,mjs}"
+    "scripts/**/*.ts"
   ],
   "ignoreDependencies": [
     "@react-router/node",

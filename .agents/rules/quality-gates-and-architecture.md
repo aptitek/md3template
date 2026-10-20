@@ -1,165 +1,139 @@
 ---
 trigger: always_on
-description: Mandatory architectural guardrails, anti-vibe-coding rules, and first-time-right quality gate instructions for md3template.
+description: Mandatory architectural guardrails, Haskell-grade functional purity rules, and first-time-right quality gate instructions for md3template.
 ---
 
 # Architectural Guardrails & First-Time-Right Quality Gates
 
-This repository (`md3template`) enforces a zero-tolerance architectural fortress. Every commit and push is gated by 20 static analysis checks (`pnpm run lint`) and 3 test suites (`pnpm run test`: unit coverage, Storybook browser tests, and Playwright SSR + Storybook WCAG 2.2 AA E2E tests).
+This repository (`md3template`) enforces a zero-tolerance, Haskell-grade architectural fortress. Every commit and push is gated by 20 static analysis checks (`pnpm run lint`), strict Conventional Commits (`commitlint.config.mjs`), and 4 test suites (`pnpm run test`: unit 100% coverage, StrykerJS mutation testing `>= 95%`, Storybook browser tests, and Playwright SSR + Storybook WCAG 2.2 AA E2E tests).
 
- Attempting to bypass rules with AST hacks, linter suppression comments, config edits, or shallow tests will immediately fail the build. Follow this guide to write code that passes every quality gate on the first attempt.
+Attempting to bypass rules with AST hacks, key permutations, type casts, linter suppression comments, config edits, or tautological tests will immediately fail the build. Follow this guide to write code that passes every quality gate on the first attempt.
 
 ---
 
 ## 1. Absolute Prohibitions (Never Attempt These)
 
 1. **Never use ESLint suppression comments**:
-   * `@eslint-community/eslint-comments/no-use` is configured with `allow: []` across `src/` and `tests/`.
+   * `@eslint-community/eslint-comments/no-use` is configured with `allow: []` across `src/`, `tests/`, and `scripts/`.
    * `/* eslint-disable */`, `// eslint-disable-next-line`, and `// eslint-enable` are strictly forbidden. Fix the underlying code instead.
 2. **Never tamper with quality gates, linter scripts, or configs to make a build pass**:
-   * Modifying `scripts/**`, `eslint.config.js`, `.dependency-cruiser.cjs`, or `knip.json` is blocked by the pre-commit hook (`scripts/verify-config-lock.mjs`) unless explicitly requested and approved by the user (`ALLOW_CONFIG_EDIT=1`).
+   * Modifying `scripts/**`, `eslint.config.js`, `commitlint.config.mjs`, `stryker.config.mjs`, `.dependency-cruiser.cjs`, or `knip.json` is blocked by the pre-commit hook (`scripts/verify-config-lock.ts`) unless explicitly requested and approved by the user (`ALLOW_CONFIG_EDIT=1`).
+   * All guardian scripts and ESLint plugins in `scripts/**` must be written in strict TypeScript (`.ts`). Untyped `.js`, `.mjs`, and `.cjs` files in `scripts/` are forbidden.
 3. **Never add unused dependencies or unpinned version specifiers**:
    * `knip` enforces zero unused files, exports, or dependencies. Do not dump unused packages into `knip.json`.
-   * `scripts/lint-deprecated-deps.mjs` forbids deprecated packages (direct or transitive in `pnpm-lock.yaml`) and forbids unpinned version specifiers (`"latest"`, `"*"`, `"next"`) in `package.json`.
+   * `scripts/lint-deprecated-deps.ts` forbids deprecated packages (direct or transitive in `pnpm-lock.yaml`) and forbids unpinned version specifiers (`"latest"`, `"*"`, `"next"`) in `package.json`.
 4. **Never leak secrets or production stack traces**:
-   * `scripts/lint-secrets.mjs` and `secretlint` scan the workspace for credentials, tokens, and private keys.
+   * `scripts/lint-secrets.ts` and `secretlint` scan the workspace for credentials, tokens, and private keys.
    * Error boundaries must never render `error.stack` in production; always guard stack traces behind `isDev = import.meta.env.DEV`.
+5. **Never write lazy or unscoped commit messages (`commitlint.config.mjs`)**:
+   * Every commit message must follow `<type>(<scope>): <subject>` with a non-empty architectural scope (`scope-empty: [2, 'never']`) from `ARCHITECTURAL_SCOPES`: `ui`, `tokens`, `routes`, `db`, `i18n`, `ci`, `lint`, `theme`, `worker`, `test`, `docs`, `deps`, `config`, `security`, `a11y`, `storybook`.
+   * The commit `subject` must be at least **15 characters** (`subject-min-length: [2, 'always', 15]`) and the header at most 100 characters.
 
 ---
 
-## 2. UI Primitives, Panda CSS Recipes & Material Design 3 (`@m3e/react`)
+## 2. The 6 Formal Haskell-Grade Architectural Locks
 
-### 2.1 Ban on Intrinsic HTML Elements & Generic `<panda.*>` Wrappers
+### Lock 1: `no-as-cast-and-type-predicates` & Referential Transparency (`src/`)
 
-* **Forbidden**: Raw lowercase HTML elements (`<div>`, `<span>`, `<p>`, `<button>`, `<a>`, `<input>`, `<img>`, etc.) in any JSX file.
-  * *Exceptions*:
-    1. Native `<html>`, `<head>`, and `<meta>` are permitted **only** in the document root shell (`src/root.tsx`). Never use `<panda.html>`, `<panda.head>`, or `<panda.meta>` (Panda CSS misinterprets the HTML `content` attribute on `<meta>` as the CSS `content:` property).
-    2. Material 3 Custom Elements (`<m3e-*>`, `<md-*>`, typed in `src/types/material-web.d.ts`) are permitted alongside `@m3e/react` components.
-* **Forbidden**: Generic `<panda.div>`, `<panda.span>`, `<panda.p>`, `<panda.button>`, `<panda.a>`, `<panda.img>`, `<panda.input>`, `<panda.meta>`, `<panda.link>`, `<panda.script>`, `<panda.style>`, `<panda.title>`, and any aliased member expression (`<p.div>`, `<p.section>`).
-* **Forbidden**: Importing pattern functions from `styled-system/patterns` (use JSX layout components from `styled-system/jsx` instead).
-* **Required**:
-  * Use dedicated Panda CSS layout primitives from `styled-system/jsx` for layout: `<Box>`, `<Flex>`, `<Grid>`, `<Stack>`, `<HStack>`, `<VStack>`, `<Center>`, `<Wrap>`, `<Circle>`, `<Square>`, `<Container>`.
-  * Use semantic `<panda.main>`, `<panda.header>`, `<panda.section>`, `<panda.h1>`, `<panda.pre>`, `<panda.code>` only where semantic landmarks or typography tags are required.
-  * Use Material Design 3 components from `@m3e/react` (e.g., `<M3eCard>` from `@m3e/react/card`, `<M3eButton>` from `@m3e/react/button`) for interactive and M3 UI primitives.
-  * Note for SSR (`src/worker.ts`): `@m3e/react` relies on Lit Web Components; `ensureSsrDomShim()` in `src/worker.ts` provides the minimal DOM globals required by Cloudflare `workerd` during SSR.
+`scripts/eslint/restricted-rules.ts` and `eslint.config.js` enforce pure functional programming and total functions across `src/`:
 
-### 2.2 Strict Panda CSS Recipe Enforcement (`panda-recipes` plugin)
+* **Zero Unsafe Type Coercions (`unsafeCoerce` Ban)**:
+  * `as T` (`TSAsExpression`, except `as const`), angle-bracket casts (`<T>x`), and non-null assertions (`x!`) are strictly forbidden in `src/`.
+  * Manual type predicates (`x is T` / `TSTypePredicate`) are forbidden in `src/` to prevent unsound type narrowing. Use discriminated unions or total conversion functions (e.g., `resolveLocale(value: string): Locale`).
+* **Immutability & Pure Control Flow**:
+  * Mutable variable bindings (`let`, `var`) and variable/property reassignments (`AssignmentExpression`) are forbidden in `src/`. Use `const` bindings exclusively.
+  * Imperative loops (`for`, `for..in`, `for..of`, `while`, `do..while`) are forbidden in `src/`. Use declarative functional transformations (`.map()`, `.filter()`, `.reduce()`).
+  * Mutating collection methods (`.push()`, `.pop()`, `.shift()`, `.unshift()`, `.splice()`, `.sort()`, `.reverse()`, `.fill()`, `.copyWithin()`) are forbidden in `src/`. Use immutable alternatives (`.toSorted()`, `.toSpliced()`, `.toReversed()`, `.concat()`).
+  * `else` and `else if` branches (`IfStatement[alternate!=null]` and `no-else-return`) are forbidden in `src/`. Use early returns or declarative expressions.
+* **Total Functions (Zero Runtime Exceptions in Pure Modules)**:
+  * `throw` (`ThrowStatement`) and `try / catch` (`TryStatement`) are forbidden across `src/` except at the Cloudflare Worker Edge IO boundary (`src/worker.ts`, where `handleFetch` must wrap request execution in `try / catch`).
 
-The custom AST plugin `scripts/eslint/panda-recipes-plugin.js` inspects `<Box>`, `<Flex>`, `<Grid>`, `<Stack>`, `<HStack>`, `<VStack>`, `<Center>`, `<Wrap>`, `<Circle>`, `<Square>`, `<Container>`, all `<panda.*>` elements, and all `css()` / `css.raw()` calls:
+### Lock 2: `strict-i18n-strings` & Translation Entropy (`en` <-> `fr`)
 
-* **Max 3 inline style props per element or `css()` call**:
-  * Non-style attributes (`id`, `className`, `role`, `tabIndex`, `aria-*`, `data-*`, `on*`, `ref`, `key`, `children`) do not count toward the limit.
-  * If an element or `css({ ... })` call needs **4 or more** style properties (either as JSX props, inside `css={{ ... }}`, or inside `css({ ... })`), extract a `cva()` or `sva()` recipe (or a token recipe in `src/tokens/md3.ts`).
-* **Zero conditional expressions (ternaries) in style props, `css={{ ... }}`, or `css({ ... })`**:
-  * **Bad**: `<Box bg={isActive ? 'primary' : 'surface'} />` or `css({ bg: isActive ? 'primary' : 'surface' })`.
-  * **Good**: Define a `cva` or `sva` recipe with a `variants` key and pass `<Box className={myRecipe({ active: isActive })} />`.
-* **Zero JSX prop spreading (`{...props}`) on Panda layout primitives or inside `css()`**:
-  * `<Box {...extraProps} />` and `css({ ...extraStyles })` are strictly forbidden to prevent sneaking unvalidated inline styles past the AST linter.
-* **Complete Recipe Definitions (`cva` / `sva`)**:
-  * Every `cva()` or `sva()` call that defines `variants` **must** also define `defaultVariants`.
-  * Every slot listed in `sva({ slots: [...] })` **must** be styled in `base` (no orphan slots).
+* **Total Ban on Hardcoded User-Facing Strings in `.tsx` (Inside & Outside JSX/Functions)**:
+  * `scripts/eslint/restricted-rules.ts` (`restrictedSyntaxRules` and `tsxStrictI18nSyntaxRules`) blocks:
+    * Raw JSX text (`<Box>Hello</Box>`), JSX string literals (`<Box>{'Hello'}</Box>`), and JSX template literals (`<Box>{`Hello`}</Box>`).
+    * String expressions in JSX (`{'Hello ' + name}`, `{String('Hello')}`, `{['Hello']}`).
+    * Prose strings or capitalized UI literals (`'Bonjour'`, `'Submit'`, `'Mon texte'`) assigned to variables, object properties, array elements, return statements, or default parameters **anywhere** in a `.tsx` file — including module-scope constants outside functions.
+    * Hardcoded strings in `alt`, `aria-label`, `aria-placeholder`, `aria-roledescription`, `aria-valuetext`, or `title`.
+* **Translation Entropy Verification (`scripts/lint-mdx-purity.ts`)**:
+  * `parseA11yStringsFromSource` and `validateI18nDictionaryEntropy` parse the AST of `src/i18n/strings.ts` and verify that:
+    1. Every key in `A11Y_STRINGS.en` exists in `A11Y_STRINGS.fr` (and vice-versa) with non-empty values.
+    2. No alphabetical phrase (`/[a-zA-Z]{3,}/`) is copy-pasted untranslated between `en` and `fr`.
 
----
+### Lock 3: `md3-color-pairing` (Algebraic Material Design 3 Color Pairing)
 
-## 3. 100% Pure Solarized & MD3 Design Tokens
+The `m3-tokens/enforce-color-pairing` rule in `scripts/eslint/m3-tokens-plugin.ts` (backed by `MD3_COLOR_PAIRINGS` in `scripts/eslint/ast-helpers.ts`) enforces Material Design 3 color algebra:
 
-* **`strictTokens: true` & Zero Tailwind Preset**:
-  * `panda.config.ts` uses only `@pandacss/preset-base` and `src/tokens/md3.ts`. Default Tailwind colors (`emerald.500`, `blue.600`, etc.) do not exist and will fail TypeScript and Panda codegen.
-* **No Hardcoded Colors or Raw Lengths in Components**:
-  * `scripts/eslint/m3-tokens-plugin.js` and `scripts/eslint/css-tokens-plugin.js` ban hardcoded hex (`#...`), `rgb()`, `rgba()`, `hsl()`, `oklch()`, and named colors outside `src/tokens/md3.ts` and `src/theme/theme.css`.
-  * Pure white (`#ffffff`) and pure black (`#000000`) are forbidden everywhere, including in token files. Use the canonical Solarized palette (`#fdf6e3` base3, `#eee8d5` base2, `#073642` base02, `#002b36` base03, `#859900` green primary, `#d33682` magenta secondary, `#268bd2` blue tertiary, `#dc322f` red error).
-* **Token Synchronization (`src/tokens/md3.ts` <-> `src/theme/theme.css`)**:
-  * Whenever updating radii (`small: 8px`, `medium: 12px`, `large: 16px`, `extraLarge: 28px`, `full: 9999px`), motion durations (`short3 / fast: 150ms`, `medium1 / normal: 250ms`, `long2 / slow: 500ms`), spacing, or semantic colors, keep `src/tokens/md3.ts` and `src/theme/theme.css` strictly synchronized.
-* **No Inline `style` Attributes**:
-  * `style={{ ... }}` is banned across all JSX elements.
+* Whenever a `cva()` or `sva()` recipe `base` block sets `bg` or `backgroundColor` to an MD3 container/surface token, it **must** explicitly declare the paired `color` token in the same block:
+  * `primary` -> `onPrimary`
+  * `primaryContainer` -> `onPrimaryContainer`
+  * `secondary` -> `onSecondary`
+  * `secondaryContainer` -> `onSecondaryContainer`
+  * `tertiary` -> `onTertiary`
+  * `tertiaryContainer` -> `onTertiaryContainer`
+  * `error` -> `onError`
+  * `errorContainer` -> `onErrorContainer`
+  * `background` -> `onBackground`
+  * `surface`, `surfaceDim`, `surfaceBright`, `surfaceContainerLowest`, `surfaceContainerLow`, `surfaceContainer`, `surfaceContainerHigh`, `surfaceContainerHighest` -> `onSurface` (or `onSurfaceVariant`)
+  * `surfaceVariant` -> `onSurfaceVariant` (or `onSurface`)
+  * `inverseSurface` -> `inverseOnSurface`
+* Any mismatched `bg` + `color` pairing on a recipe object or JSX element (e.g., `bg="surfaceContainer" color="onPrimary"`) is immediately rejected.
 
----
+### Lock 4: `true-atomic-purity` (UI Primitives, Hook Bans & Atomic Design Hierarchy)
 
-## 4. Separation of Concerns: i18n, Accessibility (WCAG 2.2 AA) & MDX Purity
+* **Ban on Intrinsic HTML Elements, `<panda.div>`, and `panda('div')` Factories**:
+  * Raw lowercase HTML elements (`<div>`, `<span>`, `<button>`, etc.) are forbidden in JSX except native `<html>`, `<head>`, and `<meta>` in `src/root.tsx` and M3 custom elements (`<m3e-*>`, `<md-*>`).
+  * Generic `<panda.div>`, `<panda.span>`, `<panda.button>`, `<panda.meta>`, aliased `<p.div>`, and factory calls `panda('div', ...)` (`CallExpression[callee.name="panda"]`) are strictly forbidden.
+  * Use dedicated Panda layout primitives (`<Box>`, `<Flex>`, `<Grid>`, `<Stack>`, `<HStack>`, `<VStack>`, `<Center>`, `<Container>`) from `styled-system/jsx`, semantic landmarks (`<panda.main>`, `<panda.section>`, `<panda.h1>`, `<panda.pre>`, `<panda.code>`), and `@m3e/react` components.
+* **Ban on Imperative Effect Hooks in UI & Routes**:
+  * Importing or calling `useEffect` or `useLayoutEffect` is forbidden across `src/components/**` and `src/routes/**`.
+* **Strict Downward Atomic Hierarchy (`eslint-plugin-boundaries` & `.dependency-cruiser.cjs`)**:
+  * `src/components/atoms/**`: **100% stateless pure functions**. All React hooks (`useState`, `useReducer`, `useContext`, `useRef`, etc.) are forbidden in `atoms/`. May only import from `tokens`, `theme`, `i18n`, `types`.
+  * `src/components/molecules/**`: May compose `atoms`, `tokens`, `theme`, `i18n`, `types`. Forbidden from importing domain/persistence layers (`src/db/`).
+  * `src/components/organisms/**`: May compose `molecules` and `atoms`. Forbidden from importing `react-router` (navigation/actions must be injected via props or slots).
+  * `src/components/templates/**`: Pure spatial geometry and `ReactNode` slots only. Forbidden from importing `src/i18n/` or `src/db/`.
+  * `src/routes/**`: Orchestrates loaders/actions, high-level i18n, `ErrorBoundary`, and templates/organisms. Forbidden from importing `atoms` or `molecules` directly.
 
-### 4.1 Total Ban on Hardcoded User-Facing Strings in JSX & Functions
+### Lock 5: `ast-recipe-dedup` (Commutative Panda CSS Recipe Deduplication)
 
-`scripts/eslint/restricted-rules.js` blocks all of the following in `.tsx` files (except `.stories.tsx` and `.test.tsx`):
+The `panda-recipes/enforce-recipe-usage` rule in `scripts/eslint/panda-recipes-plugin.ts`:
 
-* Raw JSX text: `<Box>Hello</Box>`
-* JSX string literals: `<Box>{'Hello'}</Box>`
-* JSX template literals (`TemplateLiteral` inside `JSXExpressionContainer`)
-* JSX string expressions: `<Box>{'Hello ' + name}</Box>`, `<Box>{String('Hello')}</Box>`, `<Box>{['Hello']}</Box>`
-* Local prose or UI string variables inside component functions (`const label = 'Submit'; return <Box>{label}</Box>;`)
-* Hardcoded strings in `alt`, `aria-label`, `aria-placeholder`, `aria-roledescription`, `aria-valuetext`, `title`, or default prop values (`label = 'Default'`).
+* Limits inline style props to **max 3** per Panda JSX element or `css()` call, bans conditional expressions (ternaries/logical operators) in style props, and bans JSX prop spreading (`{...props}`).
+* Requires `defaultVariants` whenever `variants` is defined in `cva()` / `sva()`, and requires every slot in `sva({ slots: [...] })` to be styled under `base`.
+* **Canonical Commutative Deduplication**: Extracts and alphabetically sorts `property=token` pairs from every `cva()` and `sva()` `base` block (`extractCanonicalStylePairs`). If two recipe blocks share **3 or more identical `property=token` pairs** — even with permuted key order — ESLint reports a `duplicateRecipeBlock` violation. Reuse canonical recipes (such as `surfaceCard` from `styled-system/recipes`) instead of duplicating style definitions.
 
-### 4.2 How to Provide Localized Content Correctly
+### Lock 6: `test-assertion-purity` & StrykerJS Mutation Testing (Anti-Fraud Unit & Integration Testing)
 
-1. **UI & Accessibility Strings (`src/i18n/strings.ts`)**:
-   * Add the key and its English (`en`) and French (`fr`) translations to `A11Y_STRINGS` in `src/i18n/strings.ts`.
-   * Retrieve the localized string via `resolveA11yString(locale, 'keyName')` or `i18n.t('keyName', { lng: locale })`, or pass it down via typed props/loader data.
-2. **Long-Form Content (`src/content/<locale>/*.mdx`)**:
-   * Store rich prose in `src/content/en/` and `src/content/fr/`.
-   * `scripts/lint-mdx-purity.mjs` enforces **100% pure Markdown** in `.mdx` files: zero HTML tags (`<div>`, `<span>`), zero `style=` or `className=`, zero `import`/`export` statements.
-3. **Markdown Documentation (`*.md`)**:
-   * `scripts/lint-markdown-structure.mjs` forbids raw HTML tags outside backticks/code fences in `.md` files and requires properly closed code blocks and depth-matched fenced divs (`:::`).
+In `tests/**/*.{ts,tsx}`, `eslint.config.js` and `stryker.config.mjs` forbid:
 
----
-
-## 5. Code Complexity, Duplication & Architectural Boundaries
-
-### 5.1 Code Complexity & Size Limits (`eslint.config.js` & `sonarjs`)
-
-Every function in `src/`, `tests/`, and `scripts/` must obey:
-
-* **Cyclomatic complexity**: `<= 8`
-* **Cognitive complexity (`sonarjs/cognitive-complexity`)**: `<= 15`
-* **Max lines per function**: `<= 64` (skipping blanks and comments)
-* **Max lines per file**: `<= 350`
-* **Max nesting depth**: `<= 3`
-* **Max parameters per function**: `<= 3` (use a typed options/props interface instead of >3 positional arguments; never mutate a shared context object to bypass parameter limits)
-* **Zero code duplication (`jscpd`)**: `.jscpd.json` enforces `threshold: 0` across `src`, `tests`, and `scripts`. Extract shared helpers cleanly instead of copy-pasting blocks.
-
-### 5.2 Module Hierarchy & Dependency Cruiser (`.dependency-cruiser.cjs`)
-
-Imports must flow strictly downward without circular dependencies or wildcard barrel exports (`export * from '...'` is banned):
-
-1. `src/tokens/**` -> leaf layer (cannot import from `components`, `routes`, `root`, or `worker`).
-2. `src/i18n/**` & `src/db/**` -> foundational layers (may only import from `tokens` or `i18n`).
-3. `src/components/**` -> shared UI layer (may import from `tokens`, `i18n`, `styled-system`; never from `routes`, `root`, or `worker`).
-4. `src/routes/**` -> route views and loaders (may import from `components`, `tokens`, `i18n`, `db`, `styled-system`).
-5. `src/root.tsx` & `src/worker.ts` -> application shell and edge entrypoints.
-
-### 5.3 React Router v7 Nested Routes & Strategic Error Boundaries
-
-* **Nested Routing (`scripts/lint-routes.mjs` & `react-router-nested` plugin)**:
-  * Every UI route in `src/routes.ts` must be nested inside a parent `layout(...)` route that renders `<Outlet />` (e.g., `src/routes/layout.tsx`).
-  * Route modules must stay focused on loader/action/meta orchestration and delegate presentation to clean view components.
-* **Mandatory Strategic Error Boundaries (`scripts/lint-error-boundaries.mjs`)**:
-  * `src/worker.ts` must wrap request handling in `try / catch` inside `handleFetch` and return a `500` JSON diagnostic with `x-error-boundary: worker`.
-  * `src/root.tsx` and every route in `src/routes/*.tsx` must export an `ErrorBoundary` function rendering `<ErrorBoundaryView />`.
-  * Major route sections must be wrapped in `<StrategicSectionBoundary boundary="section:..." />`.
+* Skipped, focused, or todo tests (`it.skip`, `test.only`, `it.todo`).
+* Hollow test blocks without an `expect(...)` call.
+* **Weak or tautological assertions**: `.toBeTruthy()`, `.toBeFalsy()`, `.toBeDefined()`, `.toMatchSnapshot()`, and `.toMatchInlineSnapshot()`. Always assert concrete values (`.toBe()`, `.toEqual()`, `.toStrictEqual()`, `.toContain()`, `.toHaveLength()`).
+* **Module mocking**: `vi.mock()` and `jest.mock()` are forbidden. Test real module compositions or inject dependencies explicitly via function parameters.
+* **Surviving Mutants (`pnpm run test:mutation`)**: StrykerJS (`stryker.config.mjs`) mutates `src/**` with `@stryker-mutator/vitest-runner` and enforces a strict `break: 95` mutation score threshold (currently 100%). Every conditional branch, fallback expression, and status code in `src/` must be killed by a concrete unit test assertion.
 
 ---
 
-## 6. First-Time-Right TDD, Storybook CSF3 & E2E Verification
+## 3. Code Complexity, Size Limits & Guardian Script Constraints
 
-### 6.1 Per-File TDD Companion & Coverage Gate (`>= 95%` Required, `100%` Target)
+Every module is subject to strict KISS and DRY (`jscpd` threshold `0`) constraints in `eslint.config.js`:
 
-* **Every module in `src/**/*.{ts,tsx}`** (excluding `.d.ts`, `src/types/`, `src/content/`, and `src/routes.ts`) **must have a unit test companion** in `tests/unit/*.test.{ts,tsx}`.
-* **Storybook stories (`*.stories.tsx`) do NOT count as unit test companions**:
-  * Both `scripts/lint-tdd-companions.mjs` and the pre-commit hook `scripts/verify-tdd-staged.mjs` verify that every staged `src/` implementation file is accompanied by its corresponding unit test in `tests/unit/`.
-  * When you modify `src/routes/home.tsx`, you **must** also update and stage `tests/unit/home.test.tsx`.
-* **Real Assertions & Per-File Coverage (`vite.config.ts` & `eslint.config.js`)**:
-  * Vitest enforces `lines: 95%`, `functions: 95%`, `statements: 95%`, and `branches: 90%` **per file** (`perFile: true`) with `passWithNoTests: false`.
-  * `eslint.config.js` strictly forbids skipped/focused/todo tests (`it.skip`, `test.only`, `it.todo`) and forbids `it(...)` / `test(...)` blocks without `expect(...)` assertions.
-  * Assert concrete rendered markup (`renderToStaticMarkup`), DOM attributes (`role="alert"`, `data-error-boundary`, `lang="en"`), return values, and both development (`isDev = true`) and production (`isDev = false`) branches.
+| Metric | Production Code (`src/**`) | Guardian Scripts (`scripts/**`) & Tests (`tests/**`) |
+| --- | --- | --- |
+| **Cyclomatic complexity (`complexity`)** | `<= 3` | `<= 8` |
+| **Max nesting depth (`max-depth`)** | `<= 1` (and zero `else`) | `<= 3` |
+| **Max lines per function (`max-lines-per-function`)** | `<= 28` | `<= 64` (`scripts/**`) |
+| **Max lines per file (`max-lines`)** | `<= 150` (`<= 256` for `src/tokens/**`) | `<= 256` (`scripts/**`) |
+| **Max parameters per function (`max-params`)** | `<= 3` | `<= 3` |
 
-### 6.2 Storybook Coverage & Strict CSF3 Format (`scripts/lint-storybook-coverage.mjs`)
+* **Guardian Script Independence & TDD (`scripts/**`)**:
+  * `.dependency-cruiser.cjs` (`scripts-independence` via `depcruise src scripts`) forbids `scripts/**` from importing runtime modules from `src/` or `tests/`. Guardian scripts inspect `src/` via the TypeScript Compiler AST (`ts.createSourceFile`).
+  * Both `scripts/lint-tdd-companions.ts` and `scripts/verify-tdd-staged.ts` enforce that **every module in `src/**` and `scripts/**`** has an active unit test companion in `tests/unit/*.test.{ts,tsx}` and that modifying any `src/` or `scripts/` file stages its corresponding unit test.
 
-* Every `.tsx` file in `src/` (components, routes, `root.tsx`) must have a co-located `<name>.stories.tsx` file.
-* Every story file must follow strict **CSF3**:
-  * Default export `meta` typed with `satisfies Meta<typeof Component>`.
-  * Explicit `title` and `component` properties in `meta`.
-  * At least one named `export const StoryName: Story = { args: { ... } }`.
-  * **Never** use `storiesOf`, `Template.bind({})`, or custom `render:` functions inside story objects (configure component rendering through `args` and `meta` instead).
+---
 
-### 6.3 Pre-Commit Verification Checklist
+## 4. Pre-Commit Verification Checklist
 
 Before staging or committing any work, always run this exact sequence and ensure zero errors or warnings:
 
@@ -167,12 +141,12 @@ Before staging or committing any work, always run this exact sequence and ensure
 # 1. Regenerate Panda CSS styled-system & React Router route types
 pnpm run codegen:panda && pnpm run codegen:types
 
-# 2. Format all files (Prettier, ESLint --fix, Knip)
+# 2. Format all files (Prettier)
 pnpm run format
 
-# 3. Run all 20 static quality gates (ESLint, Typecheck, Depcruise, Knip, JSCPD, Secrets, TDD, MDX, Markdown, Size-Limit)
+# 3. Run all 20 static quality gates (ESLint, Typecheck, Depcruise, Knip, JSCPD, Secrets, TDD, MDX/i18n Entropy, Markdown, Routes, Boundaries, Storybook CSF3, Size-Limit)
 pnpm run lint
 
-# 4. Run all 3 test suites (Unit 100% coverage, Storybook headless Chromium, Playwright Worker SSR + Storybook axe WCAG 2.2 AA)
+# 4. Run all 4 test suites (Unit 100% coverage, StrykerJS mutation testing >= 95%, Storybook headless Chromium, Playwright Worker SSR + Storybook axe WCAG 2.2 AA)
 pnpm run test
 ```

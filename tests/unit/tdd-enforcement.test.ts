@@ -1,17 +1,24 @@
+import { spawnSync } from 'node:child_process';
+import { readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import commitlintConfig, {
+  ARCHITECTURAL_SCOPES,
+} from '../../commitlint.config.mjs';
 import {
   findCompanionForFile,
   validateAllCompanions,
-} from '../../scripts/lint-tdd-companions.mjs';
-import { checkConfigLockStaged } from '../../scripts/verify-config-lock.mjs';
-import { checkTddStaged } from '../../scripts/verify-tdd-staged.mjs';
+} from '../../scripts/lint-tdd-companions.ts';
+import { checkConfigLockStaged } from '../../scripts/verify-config-lock.ts';
+import { checkTddStaged } from '../../scripts/verify-tdd-staged.ts';
 
 describe('Config Lock Staged Pre-Commit Hook', () => {
-  it('blocks commits modifying scripts/, eslint.config.js, .dependency-cruiser.cjs, or knip.json without explicit approval', () => {
+  it('blocks commits modifying scripts/, eslint.config.js, commitlint.config.mjs, .dependency-cruiser.cjs, or knip.json without explicit approval', () => {
     for (const protectedFile of [
-      'scripts/lint-routes.mjs',
-      'scripts/eslint/restricted-rules.js',
+      'scripts/lint-routes.ts',
+      'scripts/eslint/restricted-rules.ts',
       'eslint.config.js',
+      'commitlint.config.mjs',
+      'stryker.config.mjs',
       '.dependency-cruiser.cjs',
       'knip.json',
     ]) {
@@ -23,7 +30,7 @@ describe('Config Lock Staged Pre-Commit Hook', () => {
 
   it('allows commits modifying protected files when ALLOW_CONFIG_EDIT=1 is set', () => {
     const result = checkConfigLockStaged(
-      ['eslint.config.js', 'scripts/verify-config-lock.mjs'],
+      ['eslint.config.js', 'scripts/verify-config-lock.ts'],
       { ALLOW_CONFIG_EDIT: '1' }
     );
     expect(result.pass).toBe(true);
@@ -40,19 +47,81 @@ describe('Config Lock Staged Pre-Commit Hook', () => {
   });
 });
 
+describe('Strict Conventional Commits & Guardian Type Safety', () => {
+  it('enforces mandatory architectural scope-enum, non-empty scope, and subject-min-length >= 15 in commitlint.config.mjs', () => {
+    for (const requiredScope of [
+      'ui',
+      'tokens',
+      'routes',
+      'db',
+      'i18n',
+      'ci',
+      'lint',
+    ]) {
+      expect(ARCHITECTURAL_SCOPES).toContain(requiredScope);
+    }
+    expect(commitlintConfig.rules['scope-empty']).toEqual([2, 'never']);
+    expect(commitlintConfig.rules['subject-min-length']).toEqual([
+      2,
+      'always',
+      15,
+    ]);
+    expect(commitlintConfig.rules['scope-enum'][0]).toBe(2);
+    expect(commitlintConfig.rules['scope-enum'][1]).toBe('always');
+
+    const lazyNoScope = spawnSync('pnpm', ['exec', 'commitlint'], {
+      input: 'chore: fix\n',
+      encoding: 'utf-8',
+    });
+    expect(lazyNoScope.status).not.toBe(0);
+
+    const lazyShortSubject = spawnSync('pnpm', ['exec', 'commitlint'], {
+      input: 'feat(ui): fix bug\n',
+      encoding: 'utf-8',
+    });
+    expect(lazyShortSubject.status).not.toBe(0);
+
+    const validArchitecturalCommit = spawnSync('pnpm', ['exec', 'commitlint'], {
+      input: 'feat(tokens): synchronize solarized elevation radii\n',
+      encoding: 'utf-8',
+    });
+    expect(validArchitecturalCommit.status).toBe(0);
+  });
+
+  it('enforces that 100% of guardian scripts and custom ESLint plugins in scripts/ are written in strict TypeScript (.ts)', () => {
+    const allScriptEntries = readdirSync('scripts', { recursive: true }).filter(
+      (entry): entry is string => typeof entry === 'string'
+    );
+    const untypedScripts = allScriptEntries.filter((entry) =>
+      /\.(js|mjs|cjs)$/.test(entry)
+    );
+    expect(untypedScripts).toEqual([]);
+  });
+});
+
 describe('TDD Staged Pre-Commit Hook', () => {
-  it('blocks commits when src implementation is staged without tests', () => {
+  it('blocks commits when src or scripts implementation is staged without tests', () => {
     const result = checkTddStaged(['src/components/NewFeature.tsx']);
     expect(result.pass).toBe(false);
     expect(result.stagedSrcFiles).toContain('src/components/NewFeature.tsx');
+
+    const scriptResult = checkTddStaged(['scripts/lint-routes.ts']);
+    expect(scriptResult.pass).toBe(false);
+    expect(scriptResult.stagedSrcFiles).toContain('scripts/lint-routes.ts');
   });
 
-  it('allows commits when src implementation and tests are co-staged', () => {
+  it('allows commits when src or scripts implementation and tests are co-staged', () => {
     const result = checkTddStaged([
       'src/components/NewFeature.tsx',
       'tests/unit/new-feature.test.ts',
     ]);
     expect(result.pass).toBe(true);
+
+    const scriptResult = checkTddStaged([
+      'scripts/lint-routes.ts',
+      'tests/unit/routes.test.ts',
+    ]);
+    expect(scriptResult.pass).toBe(true);
   });
 
   it('rejects commits when src implementation is co-staged only with a story file (stories do not substitute unit tests)', () => {

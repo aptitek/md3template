@@ -1,6 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { validateMarkdownContent } from '../../scripts/lint-markdown-structure.mjs';
+import { validateMarkdownContent } from '../../scripts/lint-markdown-structure.ts';
+import {
+  parseA11yStringsFromSource,
+  validateI18nDictionaryEntropy,
+} from '../../scripts/lint-mdx-purity.ts';
 
 describe('Markdown Fenced Divs & Depth-Matched Colons', () => {
   it('accepts single-level and multi-level depth-matched fenced divs', () => {
@@ -112,5 +116,18 @@ Use the \`<div>\` or \`<span>\` elements in HTML.
     const content = readFileSync('README.md', 'utf-8');
     const errors = validateMarkdownContent(content, 'README.md');
     expect(errors).toHaveLength(0);
+  });
+
+  it('enforces i18n dictionary translation entropy between en and fr in src/i18n/strings.ts', () => {
+    const stringsSource = readFileSync('src/i18n/strings.ts', 'utf-8');
+    const parsed = parseA11yStringsFromSource(stringsSource);
+    expect(validateI18nDictionaryEntropy(parsed)).toEqual([]);
+
+    const untranslatedCopy = validateI18nDictionaryEntropy({
+      en: { appTitle: 'Main Application', code: '404' },
+      fr: { appTitle: 'Main Application', code: '404' },
+    });
+    expect(untranslatedCopy).toHaveLength(1);
+    expect(untranslatedCopy[0]).toContain('Untranslated copy detected');
   });
 });

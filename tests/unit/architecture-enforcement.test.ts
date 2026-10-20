@@ -191,7 +191,7 @@ describe('Content Purity Enforcement', () => {
 
     try {
       expect(() => {
-        execSync(`node scripts/lint-mdx-purity.mjs ${tempMdxPath}`, {
+        execSync(`node scripts/lint-mdx-purity.ts ${tempMdxPath}`, {
           stdio: 'pipe',
         });
       }).toThrow();
@@ -368,5 +368,170 @@ export function BadInlineStyles({
     expect(
       messages.filter((m) => m.includes('JSX element has 4 inline style props'))
     ).toHaveLength(3);
+  });
+
+  it('enforces all 6 Haskell-grade formal locks: no-as-cast/type-predicates/imperative-code, strict-i18n-strings, md3-color-pairing, true-atomic-purity, ast-recipe-dedup, and test-assertion-purity', async () => {
+    const impureCode = `
+import { useEffect, useState } from 'react';
+import { cva } from 'styled-system/css';
+import { panda } from 'styled-system/jsx';
+
+const topLevelProse = 'Bonjour';
+const FakeDiv = panda('div');
+
+const cardA = cva({
+  base: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4',
+    bg: 'primaryContainer',
+  },
+});
+
+const cardBPermuted = cva({
+  base: {
+    gap: '4',
+    bg: 'surfaceContainer',
+    color: 'onPrimary',
+    flexDirection: 'column',
+    display: 'flex',
+  },
+});
+
+export function isFakeUser(x: unknown): x is { readonly id: string } {
+  return Boolean(x);
+}
+
+export function ImpureAtom({ val }: { readonly val?: string }) {
+  const [state] = useState(0);
+  useEffect(() => {}, []);
+  let mutable = val! as unknown as string;
+  const arr = [1, 2];
+  arr.push(3);
+  for (const item of arr) {
+    mutable = String(item);
+  }
+  if (state > 0) {
+    throw new Error(mutable);
+  } else {
+    return <FakeDiv />;
+  }
+}
+`;
+    const results = await eslint.lintText(impureCode, {
+      filePath: 'src/components/atoms/ImpureAtom.tsx',
+    });
+    const messages = results[0]?.messages.map((m) => m.message) ?? [];
+
+    // Lock 1: no-as-cast, no-non-null, no-type-predicate, no-let, no-loops, no-mutating-methods, no-throw, no-else
+    expect(messages.some((m) => m.includes('Unsafe type assertion'))).toBe(
+      true
+    );
+    expect(
+      messages.some((m) => m.includes('Non-null assertion (`x!`) is forbidden'))
+    ).toBe(true);
+    expect(
+      messages.some((m) =>
+        m.includes('Manual type predicate (`x is T`) is forbidden')
+      )
+    ).toBe(true);
+    expect(
+      messages.some((m) =>
+        m.includes('Mutable variable binding (`let`/`var`) is forbidden')
+      )
+    ).toBe(true);
+    expect(
+      messages.some((m) => m.includes('Imperative loop (`for`/`while`)'))
+    ).toBe(true);
+    expect(
+      messages.some((m) =>
+        m.includes(
+          'Mutating collection method (`.push()`, `.pop()`, `.splice()`, `.sort()`, etc.) is forbidden'
+        )
+      )
+    ).toBe(true);
+    expect(
+      messages.some((m) =>
+        m.includes('Partial functions (`throw` / `try..catch`) are forbidden')
+      )
+    ).toBe(true);
+    expect(
+      messages.some((m) =>
+        m.includes('Imperative `else` / `else if` branch is forbidden')
+      )
+    ).toBe(true);
+
+    // Lock 2: strict-i18n-strings (top-level capitalized literal outside JSX/functions)
+    expect(
+      messages.some((m) =>
+        m.includes(
+          'Hardcoded capitalized UI string literal in .tsx module is prohibited'
+        )
+      )
+    ).toBe(true);
+
+    // Lock 3: md3-color-pairing (missing color on primaryContainer & invalid pairing surfaceContainer + onPrimary)
+    expect(
+      messages.some((m) =>
+        m.includes(
+          "recipe base with background 'primaryContainer' must explicitly declare paired foreground color (onPrimaryContainer)"
+        )
+      )
+    ).toBe(true);
+    expect(
+      messages.some((m) =>
+        m.includes(
+          "background 'surfaceContainer' cannot be paired with foreground 'onPrimary'"
+        )
+      )
+    ).toBe(true);
+
+    // Lock 4: true-atomic-purity (panda('div'), useEffect, useState in atoms)
+    expect(
+      messages.some((m) =>
+        m.includes('Recreating HTML primitives via `panda("tag", ...)`')
+      )
+    ).toBe(true);
+    expect(
+      messages.some((m) =>
+        m.includes('Imperative side-effect hooks (`useEffect`')
+      )
+    ).toBe(true);
+    expect(
+      messages.some((m) =>
+        m.includes('Atoms must be 100% stateless pure functions')
+      )
+    ).toBe(true);
+
+    // Lock 5: ast-recipe-dedup (commutative key permutation detected)
+    expect(
+      messages.some((m) =>
+        m.includes(
+          'Duplicate Panda recipe style block detected (3 shared style properties regardless of key order: display=flex, flexDirection=column, gap=4)'
+        )
+      )
+    ).toBe(true);
+
+    // Lock 6: test-assertion-purity (weak assertions & vi.mock)
+    const badTestCode = `
+import { expect, it, vi } from 'vitest';
+vi.mock('../../src/i18n/strings.ts');
+it('uses weak assertion', () => {
+  expect(1).toBeTruthy();
+  expect(1).toBeDefined();
+});
+`;
+    const testResults = await eslint.lintText(badTestCode, {
+      filePath: 'tests/unit/weak.test.ts',
+    });
+    const testMsgs = testResults[0]?.messages.map((m) => m.message) ?? [];
+    expect(
+      testMsgs.filter((m) => m.includes('Weak or tautological test assertion'))
+    ).toHaveLength(2);
+    expect(
+      testMsgs.some((m) =>
+        m.includes('Mocking modules via `vi.mock()` is forbidden')
+      )
+    ).toBe(true);
   });
 });

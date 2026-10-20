@@ -3,7 +3,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next } from 'react-i18next';
 import {
   DEFAULT_LOCALE,
-  isSupportedLocale,
+  resolveLocale,
   SUPPORTED_LOCALES,
   type Locale,
 } from './locales.ts';
@@ -64,8 +64,6 @@ void i18n
   });
 
 export function resolveA11yString(locale: string, key: A11yStringKey): string {
-  const validLocale: Locale = isSupportedLocale(locale)
-    ? locale
-    : DEFAULT_LOCALE;
+  const validLocale: Locale = resolveLocale(locale);
   return i18n.getFixedT(validLocale)(key);
 }
