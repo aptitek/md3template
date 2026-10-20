@@ -36,3 +36,17 @@ When the shape of that interface is itself in question (how deep the module is, 
 - **Red before green.** Write the failing test first, then only enough code to pass it. Don't anticipate future tests or add speculative features.
 - **One slice at a time.** One seam, one test, one minimal implementation per cycle.
 - **Refactoring is not part of the loop.** It belongs to the review stage (see the `code-review` skill), not the red → green implementation cycle.
+
+## `md3template` Repository Enforcement & 3-Tier Verification
+
+1. **Mandatory Companion Tests (`lint:tdd` & `verify-tdd-staged.ts`)**:
+   - Every module in `src/**` and `scripts/**` must have a matching unit test companion in `tests/unit/*.test.{ts,tsx}`.
+   - Staging any `src/` or `scripts/` file without staging its corresponding unit test in `tests/unit/` is blocked by the pre-commit hook.
+2. **AST Anti-Fraud Locks (`eslint.config.js` & `stryker.config.mjs`)**:
+   - `vi.mock()` and `jest.mock()` are strictly forbidden; inject dependencies via function parameters instead.
+   - Weak/tautological assertions (`.toBeTruthy()`, `.toBeFalsy()`, `.toBeDefined()`, `.toMatchSnapshot()`, `.toMatchInlineSnapshot()`) and skipped/focused tests (`it.skip`, `test.only`, `it.todo`) are banned.
+   - StrykerJS (`pnpm run test:mutation`) enforces a `>= 95%` mutation score threshold across `src/**` using incremental caching (`node_modules/.cache/stryker/incremental.json`).
+3. **3-Tier Cached Execution Commands**:
+   - **Inner-Loop / AI Agent Quick Check**: `pnpm run test:quick` (unit tests only) or `pnpm run check:quick` (fast static AST checks + unit tests).
+   - **Pre-Commit Serious Check**: `pnpm run check:commit` (incremental typecheck, depcruise, knip, jscpd, secretlint, boundaries, routes, storybook, tdd, mdx, markdown + 100% unit coverage).
+   - **Pre-Push Full Check**: `pnpm run check:push` (all 20 lint checks + unit coverage, incremental StrykerJS mutation testing, Storybook browser tests, and Playwright E2E/a11y).

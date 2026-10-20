@@ -3,18 +3,12 @@
 # Block modifications to protected configuration and linter scripts without explicit approval
 node scripts/verify-config-lock.ts
 
-# Mechanically enforce TDD: require tests when src/ is modified
+# Mechanically enforce TDD: require tests when src/ or scripts/ is modified
 node scripts/verify-tdd-staged.ts
 
 # Surgical staged-file enforcement via lint-staged (with ESLint + Prettier metadata caches)
 pnpm exec lint-staged
 
-# Incremental TypeScript type-check, secret-scanner, zero-duplication (jscpd), CSF3 story, route hierarchy, & boundary checks (cached via Wireit)
-pnpm run lint:secrets
-pnpm run lint:jscpd
-pnpm run lint:storybook
-pnpm run lint:routes
-pnpm run lint:typecheck
-pnpm run lint:boundaries
-
+# Tier 2 (Serious Commit Gate): single parallel Wireit graph with incremental & metadata caches
+pnpm run check:commit
 

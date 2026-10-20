@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import commitlintConfig, {
   ARCHITECTURAL_SCOPES,
@@ -10,6 +10,7 @@ import {
 } from '../../scripts/lint-tdd-companions.ts';
 import { checkConfigLockStaged } from '../../scripts/verify-config-lock.ts';
 import { checkTddStaged } from '../../scripts/verify-tdd-staged.ts';
+import strykerConfig from '../../stryker.config.mjs';
 
 describe('Config Lock Staged Pre-Commit Hook', () => {
   it('blocks commits modifying scripts/, eslint.config.js, commitlint.config.mjs, .dependency-cruiser.cjs, or knip.json without explicit approval', () => {
@@ -166,5 +167,23 @@ describe('TDD Test Companion Verification', () => {
   it('detects missing companion for un-tested module path', () => {
     const companion = findCompanionForFile('src/non-existent-module.ts');
     expect(companion).toBeUndefined();
+  });
+
+  it('configures the 3-tier cached check pipeline (check:quick, check:commit, check:push) and incremental Stryker cache', () => {
+    const pkg = JSON.parse(readFileSync('package.json', 'utf-8')) as {
+      scripts: Record<string, string>;
+      wireit: Record<string, { dependencies?: string[] }>;
+    };
+    expect(pkg.scripts['check:quick']).toBe('wireit');
+    expect(pkg.scripts['check:commit']).toBe('wireit');
+    expect(pkg.scripts['check:push']).toBe('wireit');
+    expect(pkg.scripts['test:quick']).toBe('wireit');
+    expect(pkg.wireit['check:quick']?.dependencies).toContain('test:unit');
+    expect(pkg.wireit['check:commit']?.dependencies).toContain('test:coverage');
+    expect(pkg.wireit['check:push']?.dependencies).toEqual(['lint', 'test']);
+    expect(strykerConfig.incremental).toBe(true);
+    expect(strykerConfig.incrementalFile).toBe(
+      'node_modules/.cache/stryker/incremental.json'
+    );
   });
 });

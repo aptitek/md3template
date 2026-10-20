@@ -19,6 +19,7 @@ const isStryker =
   dirname.includes('.stryker-tmp');
 
 export default defineConfig({
+  cacheDir: 'node_modules/.cache/vite',
   plugins: [
     mdx(),
     ...(isStryker

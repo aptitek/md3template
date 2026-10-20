@@ -15,13 +15,16 @@ Material Design 3, Panda CSS, React Router, and Cloudflare Workers template with
 - **Size Limit**: Client JS and CSS bundle size budgets.
 - **Markdown & MDX Purity**: `remark-lint` + structural validator (`lint-markdown-structure.ts`) and MDX styling ban (`lint-mdx-purity.ts`).
 - **TDD & Storybook Coverage**: 100% source module test companion enforcement (`lint-tdd-companions.ts`), pre-commit TDD staging verification (`verify-tdd-staged.ts`), and 100% component CSF3 Storybook coverage (`lint-storybook-coverage.ts`).
-- **Testing & Coverage**: Vitest unit tests (95% line/function/statement, 90% branch per-file coverage), Storybook browser tests, and Playwright E2E + Axe WCAG 2.2 AA accessibility verification.
-- **Fast Cached Commit & Push Checks**: All Wireit lint, test, and build tasks declare explicit input file globs and output fingerprints (`"output": []`), paired with shared metadata caches for ESLint, Prettier, TypeScript, Knip, and Dependency Cruiser.
+- **Testing, Coverage & Mutation**: Vitest unit tests (95% line/function/statement, 90% branch per-file coverage), incremental StrykerJS mutation testing (`>= 95%` threshold), Storybook browser tests, and Playwright E2E + Axe WCAG 2.2 AA accessibility verification.
+- **3-Tier Cached Verification**: Wireit input/output fingerprinting paired with Vite/Vitest (`node_modules/.cache/vite`), Stryker incremental (`node_modules/.cache/stryker/incremental.json`), ESLint, Prettier, TypeScript, Knip, and Dependency Cruiser caches across `check:quick` (AI agents), `check:commit` (pre-commit), and `check:push` (pre-push/CI).
 
 ## Commands
 
 ```bash
 pnpm run dev
+pnpm run check:quick
+pnpm run check:commit
+pnpm run check:push
 pnpm run lint
 pnpm run test
 pnpm run build

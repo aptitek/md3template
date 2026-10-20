@@ -16,12 +16,6 @@ export default {
       `prettier --write ${PRETTIER_CACHE_ARGS} ${files.join(' ')}`,
     ];
 
-    if (files.some((f) => f.includes('src/'))) {
-      commands.push('node scripts/lint-error-boundaries.ts');
-      commands.push('node scripts/lint-routes.ts');
-      commands.push('node scripts/lint-storybook-coverage.ts');
-    }
-
     return commands;
   },
   '*.css': (filenames) => {

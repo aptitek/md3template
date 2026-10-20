@@ -33,6 +33,8 @@ export default {
     '!src/routes.ts',
   ],
   ignoreStatic: true,
+  incremental: true,
+  incrementalFile: 'node_modules/.cache/stryker/incremental.json',
   coverageAnalysis: 'perTest',
   reporters: ['clear-text', 'progress', 'json'],
   jsonReporter: {

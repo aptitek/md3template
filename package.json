@@ -18,6 +18,10 @@
     "postinstall": "wrangler types",
     "codegen:panda": "wireit",
     "codegen:types": "wireit",
+    "check": "wireit",
+    "check:quick": "wireit",
+    "check:commit": "wireit",
+    "check:push": "wireit",
     "lint": "wireit",
     "lint:eslint": "wireit",
     "lint:prettier": "wireit",
@@ -40,6 +44,7 @@
     "lint:size": "wireit",
     "lint:fix": "wireit",
     "test": "wireit",
+    "test:quick": "wireit",
     "test:unit": "wireit",
     "test:stories": "wireit",
     "test:coverage": "wireit",
@@ -341,12 +346,56 @@
     "lint:fix": {
       "command": "eslint . --fix --cache --cache-location node_modules/.cache/eslint/ --cache-strategy metadata && knip --fix && prettier --write --cache --cache-location node_modules/.cache/prettier/.prettiercache --cache-strategy metadata ."
     },
+    "check": {
+      "dependencies": [
+        "check:push"
+      ]
+    },
+    "check:quick": {
+      "dependencies": [
+        "lint:eslint",
+        "lint:typecheck",
+        "lint:boundaries",
+        "lint:routes",
+        "lint:storybook",
+        "lint:tdd",
+        "lint:mdx",
+        "test:unit"
+      ]
+    },
+    "check:commit": {
+      "dependencies": [
+        "lint:typecheck",
+        "lint:depcruise",
+        "lint:knip",
+        "lint:jscpd",
+        "lint:secrets",
+        "lint:boundaries",
+        "lint:routes",
+        "lint:storybook",
+        "lint:tdd",
+        "lint:mdx",
+        "lint:markdown",
+        "test:coverage"
+      ]
+    },
+    "check:push": {
+      "dependencies": [
+        "lint",
+        "test"
+      ]
+    },
     "test": {
       "dependencies": [
         "test:coverage",
         "test:mutation",
         "test:stories",
         "test:e2e"
+      ]
+    },
+    "test:quick": {
+      "dependencies": [
+        "test:unit"
       ]
     },
     "test:unit": {
@@ -387,26 +436,31 @@
       "command": "stryker run",
       "dependencies": [
         "codegen:panda",
-        "codegen:types",
-        "test:coverage"
+        "codegen:types"
       ],
       "files": [
         "src/**/*.{ts,tsx}",
-        "tests/unit/**/*.{ts,tsx}",
+        "!src/**/*.stories.{ts,tsx}",
+        "!src/**/*.d.ts",
+        "!src/types/**",
+        "!src/tokens/**",
+        "!src/routes.ts",
+        "tests/unit/{a11y-enforcement,db-schema,error-boundary,home,layout,root,worker}.test.{ts,tsx}",
+        "tests/mocks/**/*.ts",
         "stryker.config.mjs",
         "vite.config.ts",
         "tsconfig.json",
         "package.json"
       ],
       "output": [
-        "reports/mutation/**"
+        "reports/mutation/**",
+        "node_modules/.cache/stryker/**"
       ]
     },
     "test:stories": {
       "command": "vitest run --project=storybook",
       "dependencies": [
-        "codegen:panda",
-        "test:coverage"
+        "codegen:panda"
       ],
       "files": [
         "src/**/*.{ts,tsx,js,jsx,css}",

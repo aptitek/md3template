@@ -20,6 +20,21 @@ Vitest is a next-generation testing framework powered by Vite. It provides a Jes
 
 > The skill is based on Vitest 5.0.1, generated at 2026-09-25.
 
+## `md3template` Repository Configuration & Cached Tiers
+
+- **Transform & Results Caching**: Vite/Vitest caches transforms in `node_modules/.cache/vite`, Wireit caches task fingerprints in `.wireit/`, and StrykerJS caches incremental mutation analysis in `node_modules/.cache/stryker/incremental.json`.
+- **Commands**:
+  - `pnpm run test:quick` / `pnpm run test:unit`: Fast cached unit test run (`vitest run --project=unit`).
+  - `pnpm run check:quick`: Fast AI agent inner-loop check (ESLint + typecheck + architectural AST checks + `test:unit`).
+  - `pnpm run test:coverage` / `pnpm run check:commit`: Unit tests with V8 coverage enforcement (`vitest run --coverage --project=unit`).
+  - `pnpm run test:mutation`: Incremental StrykerJS mutation testing (`stryker run` with `@stryker-mutator/vitest-runner`, `>= 95%` threshold).
+  - `pnpm run test:stories`: Headless Chromium Storybook test runner (`vitest run --project=storybook`).
+  - `pnpm run check:push`: Full 20-gate lint + 4-suite test pipeline.
+- **Strict Test Purity Bans (`eslint.config.js`)**:
+  - `vi.mock()` and `jest.mock()` are forbidden (use explicit parameter injection).
+  - `.toBeTruthy()`, `.toBeFalsy()`, `.toBeDefined()`, `.toMatchSnapshot()`, and `.toMatchInlineSnapshot()` are forbidden.
+  - `it.skip`, `test.only`, `it.todo`, and test blocks without `expect(...)` are forbidden.
+
 ## Core
 
 | Topic | Description | Reference |

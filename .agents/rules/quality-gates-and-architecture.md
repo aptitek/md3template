@@ -133,20 +133,35 @@ Every module is subject to strict KISS and DRY (`jscpd` threshold `0`) constrain
 
 ---
 
-## 4. Pre-Commit Verification Checklist
+## 4. 3-Tier Cached Verification System
 
-Before staging or committing any work, always run this exact sequence and ensure zero errors or warnings:
+All lint, build, and test gates are orchestrated via **Wireit** (`package.json`) with fine-grained input globs, output fingerprinting (`.wireit/`), and persistent tool caches:
+* **Vite & Vitest**: `node_modules/.cache/vite`
+* **StrykerJS Incremental Mutation**: `node_modules/.cache/stryker/incremental.json` (`incremental: true` in `stryker.config.mjs`)
+* **TypeScript Incremental**: `node_modules/.cache/tsbuildinfo/`
+* **ESLint & Prettier Metadata**: `node_modules/.cache/eslint/` & `node_modules/.cache/prettier/.prettiercache`
+* **Dependency Cruiser & Knip**: `node_modules/.cache/dependency-cruiser` & `node_modules/.cache/knip/`
+
+Use the appropriate tier for your workflow:
+
+1. **Tier 1 — Quick Check for AI Agents & Inner-Loop TDD (`pnpm run check:quick` / `pnpm run test:quick`)**:
+   * Runs fast static checks (`lint:eslint`, `lint:typecheck`, `lint:boundaries`, `lint:routes`, `lint:storybook`, `lint:tdd`, `lint:mdx`) + unit tests (`test:unit`) in a single parallel Wireit graph (~1s cached).
+   * Use `pnpm run test:quick` when you only want to run cached unit tests (`vitest run --project=unit`).
+2. **Tier 2 — Serious Pre-Commit Gate (`pnpm run check:commit`)**:
+   * Automatically runs on `git commit` (`.husky/pre-commit`) alongside `lint-staged`. Executes incremental `tsc`, `depcruise`, `knip`, `jscpd`, `secretlint`, `boundaries`, `routes`, `storybook`, `tdd`, `mdx`, `markdown`, and `test:coverage` (100% unit coverage) in a single parallel Wireit graph (~2s cached).
+3. **Tier 3 — Full Pre-Push & CI Fortress (`pnpm run check:push` / `pnpm run check`)**:
+   * Automatically runs on `git push` (`.husky/pre-push`). Executes all 20 static analysis gates (`pnpm run lint`, including `lint:size`, `lint:deprecated`, and `lint:security`) and all 4 test suites (`pnpm run test`: unit coverage, incremental StrykerJS mutation testing `>= 95%`, Storybook headless Chromium, and Playwright SSR + Storybook axe WCAG 2.2 AA).
 
 ```bash
-# 1. Regenerate Panda CSS styled-system & React Router route types
-pnpm run codegen:panda && pnpm run codegen:types
+# Rapid iteration during coding (AI agent quick check)
+pnpm run check:quick
 
-# 2. Format all files (Prettier)
-pnpm run format
+# Fast unit tests only
+pnpm run test:quick
 
-# 3. Run all 20 static quality gates (ESLint, Typecheck, Depcruise, Knip, JSCPD, Secrets, TDD, MDX/i18n Entropy, Markdown, Routes, Boundaries, Storybook CSF3, Size-Limit)
-pnpm run lint
+# Pre-commit serious verification (format + commit-tier checks)
+pnpm run format && pnpm run check:commit
 
-# 4. Run all 4 test suites (Unit 100% coverage, StrykerJS mutation testing >= 95%, Storybook headless Chromium, Playwright Worker SSR + Storybook axe WCAG 2.2 AA)
-pnpm run test
+# Full pre-push verification (all 20 lint gates + all 4 cached test suites)
+pnpm run check:push
 ```

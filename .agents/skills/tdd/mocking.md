@@ -15,6 +15,8 @@ Don't mock:
 
 ## Designing for Mockability
 
+> **Note (`md3template` guardrail)**: Module-level mocking via `vi.mock()` or `jest.mock()` is strictly forbidden by ESLint (`no-restricted-syntax` in `eslint.config.js`). Always use explicit parameter dependency injection at system boundaries.
+
 At system boundaries, design interfaces that are easy to mock:
 
 **1. Use dependency injection**
